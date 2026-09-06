@@ -70,7 +70,7 @@ export default async function TicketsPage({ params }: { params: Promise<{ orderI
                       </div>
                       <div className="grid gap-5 sm:grid-cols-2">
                         <div><p className="eyebrow">Pemegang tiket</p><p className="mt-2 text-lg font-semibold">{ticket.attendee_name}</p><p className="mt-1 truncate text-sm text-muted-foreground">{ticket.attendee_email}</p></div>
-                        <div><p className="eyebrow">Order ID</p><p className="mt-2 break-all font-mono text-sm font-semibold">{ticket.order_id}</p><p className="mt-1 text-sm text-muted-foreground">Rp10.000 · 1 akses</p></div>
+                        <div><p className="eyebrow">Order ID</p><p className="mt-2 break-all font-mono text-sm font-semibold">{ticket.order_id}</p><p className="mt-1 text-sm text-muted-foreground">Rp15.000 · 1 akses</p></div>
                       </div>
                     </div>
                   </div>
