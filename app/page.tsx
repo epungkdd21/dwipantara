@@ -43,8 +43,9 @@ export default function Page() {
 
   return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>
-      <div className="gunungan-panel gunungan-left"><span className="gunungan-mark">D</span></div>
-      <div className="gunungan-panel gunungan-right"><span className="gunungan-mark">W</span></div>
+      <div className="gunungan-panel gunungan-left" aria-hidden="true"></div>
+      <div className="gunungan-panel gunungan-right" aria-hidden="true"></div>
+      <img src="/logo-dw.png" alt="Logo DWIPANTARA" className="gunungan-logo" />
       <span className="absolute inset-x-0 bottom-16 z-10 flex justify-center px-5"><span className="rounded-full border-2 border-white bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[.2em] text-accent-foreground shadow-2xl">꧁ Klik Untuk Membuka ꧂</span></span>
     </div>
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-accent/40 bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md">

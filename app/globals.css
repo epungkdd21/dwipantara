@@ -22,8 +22,10 @@ body { margin: 0; background-color: var(--background); background-image: linear-
 .gunungan-overlay.open .gunungan-left { transform: translateX(-100%) rotate(-2deg); }.gunungan-overlay.open .gunungan-right { transform: translateX(100%) rotate(2deg); }
 .scene-revealed > :not(.gunungan-overlay) { animation: scene-reveal 1.2s cubic-bezier(.2,.8,.2,1) 1.2s both; }
 @keyframes scene-reveal { from { opacity: 0; transform: scale(1.035); filter: blur(5px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
-.gunungan-mark { position: absolute; top: 50%; z-index: 2; color: #e5a93c; font-family: Georgia, serif; font-size: clamp(7rem, 18vw, 15rem); line-height: 1; transform: translateY(-50%); text-shadow: 0 0 25px rgba(229,169,60,.35); }
-.gunungan-left .gunungan-mark { right: -1rem; }.gunungan-right .gunungan-mark { left: -1rem; }
+  .gunungan-logo { position: absolute; top: 50%; left: 50%; z-index: 3; width: clamp(14rem, 42vw, 31rem); height: auto; transform: translate(-50%, -50%); filter: drop-shadow(0 1rem 1.5rem rgba(0,0,0,.42)); transition: opacity .55s ease, transform 2.8s cubic-bezier(.77,0,.175,1); }
+  .gunungan-overlay.open .gunungan-logo { opacity: 0; transform: translate(-50%, -50%) scale(.92); }
+  @media (max-width: 640px) { .gunungan-logo { width: min(76vw, 19rem); } }
+
 .batik-hero { background-color: rgba(18,8,4,.44); backdrop-filter: blur(2px); }
 .eyebrow { font-family: Arial, sans-serif; font-size: .72rem; font-weight: 800; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); }
 .section-title { margin-top: 1.25rem; font-family: Georgia, serif; font-size: clamp(2.4rem, 5vw, 4.7rem); line-height: .98; letter-spacing: -.04em; }
