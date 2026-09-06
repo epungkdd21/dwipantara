@@ -41,10 +41,11 @@ export default function Page() {
     finally { setBusy(false) }
   }
 
-  return <main className="min-h-screen overflow-hidden bg-background text-foreground">
+  return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>
-      <div className="gunungan-panel gunungan-left"><span className="gunungan-mark">D</span></div>
-      <div className="gunungan-panel gunungan-right"><span className="gunungan-mark">W</span></div>
+      <div className="gunungan-panel gunungan-left" aria-hidden="true"></div>
+      <div className="gunungan-panel gunungan-right" aria-hidden="true"></div>
+      <img src="/logo-dw.png" alt="Logo DWIPANTARA" className="gunungan-logo" />
       <span className="absolute inset-x-0 bottom-16 z-10 flex justify-center px-5"><span className="rounded-full border-2 border-white bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[.2em] text-accent-foreground shadow-2xl">꧁ Klik Untuk Membuka ꧂</span></span>
     </div>
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-accent/40 bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md">
@@ -71,7 +72,7 @@ export default function Page() {
     <section id="tiket" data-reveal className="reveal bg-secondary px-5 py-24 lg:px-8"><div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[.9fr_1.1fr] md:items-start"><div><p className="eyebrow">04 / Tiket masuk</p><h2 className="section-title">Satu tiket,<br /><em>seribu cerita.</em></h2><p className="mt-6 max-w-md leading-7 text-muted-foreground">Tiket festival berlaku untuk satu hari pilihanmu dan sudah termasuk akses seluruh pertunjukan utama.</p><div className="mt-8 flex items-center gap-3"><Ticket className="text-accent" /><span className="text-2xl font-bold">Rp{(content.ticketPrice ?? 10000).toLocaleString('id-ID')} <small className="text-sm font-normal text-muted-foreground">/ orang</small></span></div></div><form onSubmit={buyTicket} className="rounded-3xl border border-border bg-card p-6 shadow-xl md:p-8"><h3 className="mb-6 font-serif text-2xl font-bold">Pesan tiket sekarang</h3><div className="grid gap-4"><label>Nama lengkap<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nama kamu" /></label><label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="nama@email.com" /></label><label>Nomor WhatsApp<input required value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="08xxxxxxxxxx" /></label><label>Jumlah tiket<input required type="number" min="1" max="10" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></label></div>{error && <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}<button disabled={busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3.5 font-bold text-primary-foreground disabled:opacity-60">{busy ? 'Menyiapkan pembayaran…' : 'Lanjut ke pembayaran'} <ArrowRight size={18} /></button></form></div></section>
 
 
-    <AmbientSound />
+    <AmbientSound startWhenOpen={overlayOpen} />
     <footer className="bg-primary px-5 py-10 text-primary-foreground"><div className="mx-auto flex max-w-6xl flex-col gap-5 md:flex-row md:items-center md:justify-between"><div><p className="font-serif text-xl font-bold">DWIPANTARA 2026</p><p className="mt-1 text-xs text-primary-foreground/70">Jagat 'Arsy Student Cabinet (JASCA) 2025/2026</p><p className="text-xs text-primary-foreground/70">Pesantren Peradaban Dunia Jagat 'Arsy</p></div><p className="text-sm text-primary-foreground/70">Tangerang Selatan · Indonesia</p><div className="flex items-center gap-5"><span className="text-sm font-bold tracking-widest">IG / @dwipantara</span><a href="/admin" className="text-sm text-primary-foreground/70 underline-offset-4 hover:text-accent hover:underline">Admin</a></div></div></footer>
   </main>
 }
