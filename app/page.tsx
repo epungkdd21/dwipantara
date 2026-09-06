@@ -14,7 +14,7 @@ export default function Page() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '', quantity: '1' })
-  const [content, setContent] = useState<{ eventName?: string; heroTitle?: string; heroDescription?: string; aboutTitle?: string; aboutDescription?: string; ticketPrice?: number; date?: string; time?: string; venue?: string; address?: string; instagram?: string }>({})
+  const [content, setContent] = useState<{ eventName?: string; heroTitle?: string; heroTagline?: string; heroDescription?: string; aboutTitle?: string; aboutDescription?: string; ticketPrice?: number; date?: string; time?: string; venue?: string; address?: string; instagram?: string }>({})
   useEffect(() => { fetch('/api/content').then(response => response.ok ? response.json() : null).then(data => data && setContent(data)).catch(() => undefined) }, [])
 
   async function buyTicket(event: React.FormEvent) {
