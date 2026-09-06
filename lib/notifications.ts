@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 import { createTicketsPdf } from '@/lib/ticket-pdf'
 
 const getAppUrl = () => (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')).replace(/\/$/, '')
-const TICKET_PRICE = 10_000
+const TICKET_PRICE = 15_000
 
 type PaidTicket = { attendee_name: string; attendee_email: string; attendee_whatsapp: string; ticket_code: string; ticket_number: number; payment_status: string }
 

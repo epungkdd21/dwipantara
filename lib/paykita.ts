@@ -1,5 +1,5 @@
 export const PAYKITA_BASE_URL = (process.env.PAYKITA_BASE_URL || 'https://pay.digikita.id/api').replace(/\/$/, '')
-export const TICKET_PRICE = 10000
+export const TICKET_PRICE = 15000
 
 // Response terstruktur dari PayKita API sesuai dokumentasi
 type PayKitaSuccessResponse = {
