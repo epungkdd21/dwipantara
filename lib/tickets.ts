@@ -13,5 +13,6 @@ export async function createPendingTickets(input: { orderId: string; name: strin
 }
 
 export async function markTicketsPaid(orderId: string, status: string) {
-  await db.execute(sql`UPDATE tickets SET payment_status = ${status} WHERE order_id = ${orderId}`)
+  const result = await db.execute(sql`UPDATE tickets SET payment_status = ${status} WHERE order_id = ${orderId} AND payment_status <> ${status}`)
+  return result.rowCount ?? 0
 }
