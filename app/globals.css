@@ -24,6 +24,8 @@ body { margin: 0; background-color: var(--background); background-image: linear-
 @keyframes scene-reveal { from { opacity: 0; transform: scale(1.035); filter: blur(5px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
   .gunungan-logo { position: fixed; top: 50%; left: 50%; z-index: 3; width: clamp(28rem, 84vw, 62rem); max-width: none; height: auto; filter: drop-shadow(0 1rem 1.5rem rgba(0,0,0,.42)); transition: transform 2.8s cubic-bezier(.77,0,.175,1); }
   .gunungan-logo-left, .gunungan-logo-right { transform: translate(-50%, -50%); }
+  .gunungan-logo-left { clip-path: inset(0 54% 0 0); }
+  .gunungan-logo-right { clip-path: inset(0 0 0 54%); }
   .gunungan-overlay.open .gunungan-logo-left { transform: translate(calc(-50% - 50vw), -50%) scale(.98); }
   .gunungan-overlay.open .gunungan-logo-right { transform: translate(calc(-50% + 50vw), -50%) scale(.98); }
   @media (max-width: 640px) { .gunungan-logo { width: 152vw; } }
