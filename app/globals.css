@@ -24,7 +24,11 @@ body { margin: 0; background-color: var(--background); background-image: linear-
 .batik-hero { background-color: rgba(18,8,4,.44); backdrop-filter: blur(2px); }
 .eyebrow { font-family: Arial, sans-serif; font-size: .72rem; font-weight: 800; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); }
 .section-title { margin-top: 1.25rem; font-family: Georgia, serif; font-size: clamp(2.4rem, 5vw, 4.7rem); line-height: .98; letter-spacing: -.04em; }
-.section-title em { color: #ad8d1a; font-style: italic; }
+.section-title em { color: #d9a441; font-style: italic; text-shadow: 0 1px 10px rgba(0,0,0,.28); }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.75,.25,1); }
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .reveal { opacity: 1; transform: none; } }
+
 .event-card { min-height: 250px; border: 1px solid rgba(255,255,255,.2); border-radius: 1.5rem; padding: 1.75rem; transition: transform .2s, background .2s; }
 .event-card:hover { transform: translateY(-5px); background: rgba(255,255,255,.08); }
 .event-card span { color: var(--accent); font-family: Georgia, serif; font-size: 2rem; }
