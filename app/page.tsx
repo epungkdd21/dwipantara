@@ -41,7 +41,7 @@ export default function Page() {
     finally { setBusy(false) }
   }
 
-  return <main className="min-h-screen overflow-hidden bg-background text-foreground">
+  return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>
       <div className="gunungan-panel gunungan-left"><span className="gunungan-mark">D</span></div>
       <div className="gunungan-panel gunungan-right"><span className="gunungan-mark">W</span></div>
