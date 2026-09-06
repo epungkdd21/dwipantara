@@ -21,8 +21,8 @@ export async function createTicketsPdf(orderId: string, tickets: Ticket[], appUr
     page.drawText('TIKET MASUK', { x: 48, y: 690, size: 12, font: bold, color: rgb(0.65, 0.43, 0.08) })
     page.drawText(`Tiket #${ticket.ticket_number}`, { x: 48, y: 650, size: 24, font: bold, color: rgb(0.1, 0.1, 0.08) })
     page.drawText(`Nama: ${ticket.attendee_name}`, { x: 48, y: 612, size: 13, font })
-    page.drawText('Sabtu, 17 Oktober 2026 · Ba’da Isya – 22.38 WIB', { x: 48, y: 586, size: 11, font })
-    page.drawText("Lapangan Futsal Pesantren Jagat 'Arsy BSD, Serpong", { x: 48, y: 562, size: 11, font })
+    page.drawText("Sabtu, 17 Oktober 2026 · Ba'da Isya – 22.38 WIB", { x: 48, y: 586, size: 11, font })
+    page.drawText("Lapangan Futsal Pesantren Jagat 'Arsy BSD, Serpong, Tangsel, Banten", { x: 48, y: 562, size: 10, font })
     page.drawText(`Order ID: ${orderId}`, { x: 48, y: 510, size: 10, font, color: rgb(0.35, 0.35, 0.32) })
     page.drawText(`Kode tiket: ${ticket.ticket_code}`, { x: 48, y: 490, size: 10, font, color: rgb(0.35, 0.35, 0.32) })
 
