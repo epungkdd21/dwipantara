@@ -42,7 +42,7 @@ export default function Page() {
     </div>
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-accent/40 bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 lg:px-8">
-        <a href="#home" className="flex items-center gap-3"><img src={LOGO} alt="Dwipantara" className="h-10 w-10 rounded-full object-cover" /><span className="font-serif text-xl font-bold tracking-wide text-accent">DWIPANTARA 2026</span><span className="sr-only">Jagat 'Arsy Student Cabinet (JASCA) 2025/2026 — Pesantren Peradaban Dunia Jagat 'Arsy</span></a>
+        <a href="#home" className="flex items-center gap-3"><img src={LOGO} alt="Dwipantara" className="h-10 w-10 rounded-full object-cover" /><span className="font-serif text-xl font-bold tracking-wide text-accent">DWIPANTARA</span><span className="sr-only">Jagat 'Arsy Student Cabinet (JASCA) 2025/2026 — Pesantren Peradaban Dunia Jagat 'Arsy</span></a>
         <div className="hidden items-center gap-8 text-sm font-semibold md:flex"><a href="#tentang">Tentang</a><a href="#acara">Acara</a><a href="#tiket">Tiket</a><a href="#lokasi">Lokasi</a></div>
         <a href="#tiket" className="hidden rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground shadow-lg transition hover:bg-accent/90 md:block">Pesan Tiket</a>
         <button className="md:hidden" aria-label="Buka menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
