@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Clock3, MapPin, Menu, Ticket, X } from 'lucid
 import { AmbientSound } from '@/components/ambient-sound'
 
 const BG = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bg-dwipantara.jpg.jpeg-Ntxq1di3M4NzKDqHlG8cY4sITq3E5X.png'
-const LOGO = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO%20DW2-5LsgMBGIyV5mn970mhQ4iMGNCqWkHD.png'
+const LOGO = '/logo-dw26.png'
 const price = 15000
 
 export default function Page() {
@@ -43,8 +43,8 @@ export default function Page() {
 
   return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>
-      <div className="gunungan-panel gunungan-left" aria-hidden="true"><img src="/logo-dw.png" alt="" className="gunungan-logo gunungan-logo-left" /></div>
-      <div className="gunungan-panel gunungan-right" aria-hidden="true"><img src="/logo-dw.png" alt="" className="gunungan-logo gunungan-logo-right" /></div>
+      <div className="gunungan-panel gunungan-left" aria-hidden="true"><img src={LOGO} alt="" className="gunungan-logo gunungan-logo-left" /></div>
+      <div className="gunungan-panel gunungan-right" aria-hidden="true"><img src={LOGO} alt="" className="gunungan-logo gunungan-logo-right" /></div>
       <span className="absolute inset-x-0 bottom-16 z-10 flex justify-center px-5"><span className="rounded-full border-2 border-white bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[.2em] text-accent-foreground shadow-2xl">꧁ Klik Untuk Membuka ꧂</span></span>
     </div>
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-accent/40 bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md">
