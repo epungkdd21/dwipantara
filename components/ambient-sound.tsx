@@ -3,9 +3,9 @@
 import { Music2, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-const NOTES = [220, 247, 277, 330, 370, 440, 494]
+const CLASSICAL_PHRASE = [261.63, 329.63, 392, 523.25, 392, 329.63, 293.66, 349.23]
 
-export function AmbientSound() {
+export function AmbientSound({ startWhenOpen = false }: { startWhenOpen?: boolean }) {
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [volume, setVolume] = useState(0.14)
@@ -13,28 +13,36 @@ export function AmbientSound() {
   const gainRef = useRef<GainNode | null>(null)
   const timerRef = useRef<number | null>(null)
   const stepRef = useRef(0)
+  const autoStartedRef = useRef(false)
 
   useEffect(() => () => {
     if (timerRef.current) window.clearInterval(timerRef.current)
     void contextRef.current?.close()
   }, [])
 
+  useEffect(() => {
+    if (startWhenOpen && !autoStartedRef.current) {
+      autoStartedRef.current = true
+      void togglePlaying()
+    }
+  }, [startWhenOpen])
+
   function playTone() {
     const context = contextRef.current
     const gain = gainRef.current
     if (!context || !gain) return
     const now = context.currentTime
-    const note = NOTES[stepRef.current % NOTES.length]
+    const note = CLASSICAL_PHRASE[stepRef.current % CLASSICAL_PHRASE.length]
     const oscillator = context.createOscillator()
     const envelope = context.createGain()
-    oscillator.type = 'sine'
+    oscillator.type = 'triangle'
     oscillator.frequency.setValueAtTime(note, now)
     envelope.gain.setValueAtTime(0.0001, now)
-    envelope.gain.exponentialRampToValueAtTime(0.16, now + 0.04)
-    envelope.gain.exponentialRampToValueAtTime(0.0001, now + 1.8)
+    envelope.gain.exponentialRampToValueAtTime(0.12, now + 0.08)
+    envelope.gain.exponentialRampToValueAtTime(0.0001, now + 2.3)
     oscillator.connect(envelope).connect(gain)
     oscillator.start(now)
-    oscillator.stop(now + 1.9)
+    oscillator.stop(now + 2.4)
     stepRef.current += 1
   }
 
