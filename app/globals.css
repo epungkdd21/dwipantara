@@ -53,3 +53,4 @@ body { margin: 0; background-color: var(--background); background-image: linear-
 label { display: grid; gap: .45rem; color: var(--foreground); font-size: .85rem; font-weight: 700; }
 input { width: 100%; border: 1px solid var(--border); border-radius: .75rem; background: var(--input); padding: .8rem 1rem; color: var(--foreground); outline: none; }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
