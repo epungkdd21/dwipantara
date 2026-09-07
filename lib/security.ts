@@ -74,3 +74,7 @@ export function kioskPasswordMatches(password: unknown) {
   const expectedBuffer = Buffer.from(expected)
   return receivedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
 }
+
+export function isKioskPasswordConfigured() {
+  return process.env.NODE_ENV !== 'production' || Boolean(process.env.CHECKIN_KIOSK_PASSWORD)
+}

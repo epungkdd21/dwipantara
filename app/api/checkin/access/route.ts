@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
-import { CHECKIN_KIOSK_COOKIE, createKioskToken, hasKioskAccess, jsonTooLarge, kioskPasswordMatches, rateLimit, readJson } from '@/lib/security'
+import { CHECKIN_KIOSK_COOKIE, createKioskToken, hasKioskAccess, isKioskPasswordConfigured, jsonTooLarge, kioskPasswordMatches, rateLimit, readJson } from '@/lib/security'
 
 export async function GET() {
   return NextResponse.json({ unlocked: await hasKioskAccess() })
 }
 
 export async function POST(request: Request) {
+  if (!isKioskPasswordConfigured()) return NextResponse.json({ error: 'Password kiosk belum dikonfigurasi di server.' }, { status: 503 })
   const limit = rateLimit(request, 'checkin-access', 10, 60_000)
   if (!limit.allowed) return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } })
   try {
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isKioskPasswordConfigured()) return NextResponse.json({ error: 'Password kiosk belum dikonfigurasi di server.' }, { status: 503 })
   try {
     const body = await readJson<{ password?: unknown }>(request, 2_048)
     if (!kioskPasswordMatches(body.password)) return NextResponse.json({ error: 'Password kiosk salah.' }, { status: 401 })
