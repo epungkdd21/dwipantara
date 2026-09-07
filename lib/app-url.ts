@@ -1,4 +1,4 @@
-const PUBLIC_APP_URL = 'https://dwipantara.jasca.id'
+const PUBLIC_APP_URL = 'https://dwipantara.jasca.my.id'
 
 export function getAppUrl() {
   const configuredUrl = process.env.APP_URL?.trim()
