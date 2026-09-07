@@ -13,6 +13,7 @@ export async function requireAdminRole() {
   const email = session.user.email.toLowerCase()
   const operatorEmails = parseEmails(process.env.ADMIN_OPERATOR_EMAILS)
   const adminEmails = parseEmails(process.env.ADMIN_EMAILS)
+  if (!operatorEmails.has(email) && !adminEmails.has(email)) return null
   const role: AdminRole = operatorEmails.has(email) && !adminEmails.has(email) ? 'operator' : 'admin'
   return { session, role }
 }
