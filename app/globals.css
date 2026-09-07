@@ -27,10 +27,15 @@ body { margin: 0; background-color: var(--background); background-image: linear-
 .gunungan-overlay.open .gunungan-right { transform: translateX(100%) rotate(4deg) scaleX(.98); box-shadow: inset -2vw 0 5vw rgba(0,0,0,.16); }
 .scene-revealed > :not(.gunungan-overlay) { animation: scene-reveal 1.35s cubic-bezier(.18,.78,.24,1) .72s both; }
 @keyframes scene-reveal { from { opacity: 0; transform: scale(1.025); filter: blur(3px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
-  .gunungan-logo { position: absolute; top: 50%; z-index: 3; width: 100vw; max-width: none; height: auto; filter: drop-shadow(0 1rem 1.5rem rgba(0,0,0,.42)); transition: transform 2.35s cubic-bezier(.22,.82,.24,1); }
-  .gunungan-logo-left { left: 0; transform: translateY(-50%); }
-  .gunungan-logo-right { left: -100%; transform: translateY(-50%); }
-  @media (max-width: 640px) { .gunungan-logo { width: 88vw; } }
+  .gunungan-logo { position: absolute; top: 47%; z-index: 3; left: 0; width: 100vw; max-width: none; height: auto; filter: drop-shadow(0 .8rem 1.25rem rgba(0,0,0,.38)); will-change: transform; transition: transform 2.35s cubic-bezier(.22,.82,.24,1); }
+  .gunungan-logo-left { left: 0; clip-path: inset(0 50% 0 0); transform: translate(0, -50%); }
+  .gunungan-logo-right { left: -50vw; clip-path: inset(0 0 0 50%); transform: translate(0, -50%); }
+  .gunungan-overlay.open .gunungan-logo-left { transform: translate(calc(-100% + 20vw), -50%) scale(.98); }
+  .gunungan-overlay.open .gunungan-logo-right { transform: translate(calc(100% - 20vw), -50%) scale(.98); }
+  @media (max-width: 640px) {
+    .gunungan-logo { top: 45%; width: 84vw; }
+    .gunungan-logo-left { left: calc(100% - 42vw); }
+  }
 
 .batik-hero { background-color: rgba(18,8,4,.44); backdrop-filter: blur(2px); }
 .eyebrow { font-family: Arial, sans-serif; font-size: .72rem; font-weight: 800; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); }
