@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { requireAdminRole } from '@/lib/admin'
+import { requireCheckinAccess } from '@/lib/admin'
 import { jsonTooLarge, rateLimit, readJson } from '@/lib/security'
 
 export async function GET() {
-  if (!await requireAdminRole()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCheckinAccess()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const [countResult, logResult] = await Promise.all([
       db.execute(sql`SELECT COUNT(*)::int AS total FROM tickets WHERE checkin_status = 'checked_in'`),
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!await requireAdminRole()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCheckinAccess()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const limit = rateLimit(request, 'checkin', 60, 60_000)
   if (!limit.allowed) return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } })
   try {

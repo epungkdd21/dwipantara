@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
+import { hasKioskAccess } from '@/lib/security'
 
 export type AdminRole = 'admin' | 'operator'
 
@@ -16,6 +17,12 @@ export async function requireAdminRole() {
   if (!operatorEmails.has(email) && !adminEmails.has(email)) return null
   const role: AdminRole = operatorEmails.has(email) && !adminEmails.has(email) ? 'operator' : 'admin'
   return { session, role }
+}
+
+export async function requireCheckinAccess() {
+  if (await hasKioskAccess()) return { role: 'operator' as const, source: 'kiosk' as const }
+  const adminAccess = await requireAdminRole()
+  return adminAccess ? { ...adminAccess, source: 'account' as const } : null
 }
 
 export function canEditContent(role: AdminRole) { return role === 'admin' }

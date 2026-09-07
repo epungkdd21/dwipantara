@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { requireAdminRole } from '@/lib/admin'
+import { requireCheckinAccess } from '@/lib/admin'
 import { jsonTooLarge, readJson } from '@/lib/security'
 
 export async function POST(request: Request) {
-  if (!await requireAdminRole()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCheckinAccess()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { code, ticketCode } = await readJson<{ code?: unknown; ticketCode?: unknown }>(request, 4_096)
     const submittedCode = typeof code === 'string' ? code : ticketCode
