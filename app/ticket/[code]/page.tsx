@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import { TicketActions } from '@/components/ticket-actions'
+import { getAppUrl } from '@/lib/app-url'
 
 export default async function TicketPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
@@ -10,7 +11,7 @@ export default async function TicketPage({ params }: { params: Promise<{ code: s
   const ticket = result.rows[0] as { ticket_code: string; order_id: string; attendee_name: string; attendee_email: string; ticket_number: number; payment_status: string; checkin_status: string; checked_in_at: string | null } | undefined
   if (!ticket) notFound()
 
-  const origin = process.env.APP_URL || 'https://dwipantara.vercel.app'
+  const origin = getAppUrl()
   const qr = await QRCode.toDataURL(`${origin}/ticket/${encodeURIComponent(ticket.ticket_code)}`, { margin: 1, width: 360, color: { dark: '#211007', light: '#fff8e9' } })
   const paid = ticket.payment_status === 'paid'
   const checkedIn = ticket.checkin_status === 'checked_in'

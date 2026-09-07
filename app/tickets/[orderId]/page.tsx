@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { TicketActions } from '@/components/ticket-actions'
+import { getAppUrl } from '@/lib/app-url'
 
 type Ticket = {
   ticket_code: string
@@ -27,7 +28,7 @@ export default async function TicketsPage({ params }: { params: Promise<{ orderI
   const tickets = result.rows as unknown as Ticket[]
   if (!tickets.length) notFound()
 
-  const origin = process.env.APP_URL || 'https://dwipantara.vercel.app'
+  const origin = getAppUrl()
   const qrCodes = await Promise.all(tickets.map(async (ticket) => ({
     ...ticket,
     qr: await QRCode.toDataURL(`${origin}/ticket/${encodeURIComponent(ticket.ticket_code)}`, {

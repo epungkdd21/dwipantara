@@ -1,5 +1,6 @@
 export const PAYKITA_BASE_URL = (process.env.PAYKITA_BASE_URL || 'https://pay.digikita.id/api').replace(/\/$/, '')
 export const TICKET_PRICE = 15000
+import { getAppUrl } from '@/lib/app-url'
 
 // Response terstruktur dari PayKita API sesuai dokumentasi
 type PayKitaSuccessResponse = {
@@ -51,8 +52,7 @@ export async function createPayKitaOrder(input: {
 }): Promise<PayKitaOrder> {
   if (!process.env.PAYKITA_API_KEY) throw new Error('PAYKITA_API_KEY belum dikonfigurasi.')
 
-  const configuredAppUrl = process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
-  if (!configuredAppUrl) throw new Error('APP_URL harus dikonfigurasi dengan URL HTTPS publik.')
+  const configuredAppUrl = getAppUrl()
 
   let appUrl: string
   try {
