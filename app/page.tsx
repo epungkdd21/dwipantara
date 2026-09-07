@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarDays, Clock3, Mail, MapPin, Menu, Ticket, X } from 'lucide-react'
 import { AmbientSound } from '@/components/ambient-sound'
 
-const BG = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bg-dwipantara.jpg.jpeg-Ntxq1di3M4NzKDqHlG8cY4sITq3E5X.png'
+const BG = 'https://i.pinimg.com/736x/52/d2/c8/52d2c84edfcf25e4119ddab998952ef8.jpg'
+const HERO_BG = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bg-dwipantara.jpg.jpeg-Ntxq1di3M4NzKDqHlG8cY4sITq3E5X.png'
 const LOGO = '/logo-dw26.png'
 const price = 15000
 
@@ -58,7 +59,7 @@ export default function Page() {
     </nav>
     <div className="batik-divider" />
 
-    <section id="home" className="batik-hero relative flex min-h-[760px] items-center justify-center bg-cover bg-center px-5 pt-28 text-center sm:min-h-[820px]" style={{ backgroundImage: `linear-gradient(180deg, rgba(18,8,4,.62) 0%, rgba(18,8,4,.36) 42%, rgba(18,8,4,.78) 100%), linear-gradient(90deg, rgba(18,8,4,.42), rgba(18,8,4,.18), rgba(18,8,4,.42)), url(${BG})` }}>
+    <section id="home" className="batik-hero relative flex min-h-[760px] items-center justify-center bg-cover bg-center px-5 pt-28 text-center sm:min-h-[820px]" style={{ backgroundImage: `linear-gradient(180deg, rgba(18,8,4,.62) 0%, rgba(18,8,4,.36) 42%, rgba(18,8,4,.78) 100%), linear-gradient(90deg, rgba(18,8,4,.42), rgba(18,8,4,.18), rgba(18,8,4,.42)), url(${HERO_BG})` }}>
       <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center"><p className="mb-6 font-mono text-xs font-bold uppercase tracking-[.35em] text-accent">{content.eventName ?? '꧁ ꦢ꧀ꦮꦶꦥꦤ꧀ꦠꦫ ꧂'}</p><h1 className="max-w-4xl font-serif text-5xl font-bold leading-[.95] text-primary-foreground text-balance sm:text-6xl md:text-8xl">{content.heroTitle ?? 'Festival Budaya Nusantara & Tasyakur'}</h1><p className="mt-7 max-w-2xl text-base leading-7 text-primary-foreground/90 sm:text-lg sm:leading-8"><span className="block font-mono text-xs font-bold uppercase tracking-[.2em] text-accent sm:text-sm">{content.heroTagline ?? 'THE BEAUTY AND HARMONY OF NUSANTARA'}</span><span className="mx-auto mt-4 block max-w-xl">{content.heroDescription ?? "Dipersembahkan oleh Jagat 'Arsy Student Cabinet (JASCA) & Menyemarakkan Maulid Emas Ke-50 Kyai Amiin."}</span></p><div className="mt-9 flex flex-wrap justify-center gap-4"><a href="#tiket" className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-bold text-accent-foreground shadow-lg shadow-black/20 transition hover:bg-accent/90">Pesan Tiket Sekarang <ArrowRight size={18} /></a><a href="#tentang" className="rounded-full border border-primary-foreground/60 px-6 py-3 font-bold text-primary-foreground transition hover:bg-primary-foreground/10">Pelajari Selengkapnya</a></div></div>
     </section>
 
