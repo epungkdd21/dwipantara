@@ -12,7 +12,7 @@ type Ticket = {
 }
 
 const EVENT_NAME = 'Dwipantara 2026'
-const EVENT_DATE = 'Sabtu, 17 Oktober 2026'
+const EVENT_DATE = "Jum'at, 16 Oktober 2026"
 const EVENT_TIME = "Ba'da Isya – 22.38 WIB"
 const EVENT_LOCATION = "Lapangan Futsal Pesantren Jagat 'Arsy BSD"
 
