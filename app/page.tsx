@@ -15,8 +15,13 @@ export default function Page() {
   const [qr, setQr] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [accessChecked, setAccessChecked] = useState(false)
+  const [unlocked, setUnlocked] = useState(false)
+  const [accessPassword, setAccessPassword] = useState('')
+  const [accessError, setAccessError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '', quantity: '1' })
   const [content, setContent] = useState<{ eventName?: string; heroTitle?: string; heroTagline?: string; heroDescription?: string; aboutTitle?: string; aboutDescription?: string; ticketPrice?: number; date?: string; time?: string; venue?: string; address?: string; instagram?: string }>({})
+  useEffect(() => { fetch('/api/access', { cache: 'no-store' }).then(response => response.json()).then(data => setUnlocked(Boolean(data.unlocked))).catch(() => setAccessError('Tidak dapat memeriksa akses.')).finally(() => setAccessChecked(true)) }, [])
   useEffect(() => { fetch('/api/content').then(response => response.ok ? response.json() : null).then(data => data && setContent(data)).catch(() => undefined) }, [])
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>('[data-reveal]')
@@ -41,6 +46,18 @@ export default function Page() {
     } catch (err) { setError(err instanceof Error ? err.message : 'Checkout gagal') }
     finally { setBusy(false) }
   }
+
+  async function unlock(event: React.FormEvent) {
+    event.preventDefault(); setAccessError('')
+    try {
+      const response = await fetch('/api/access', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: accessPassword }) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Akses ditolak.')
+      setUnlocked(true); setAccessPassword('')
+    } catch (err) { setAccessError(err instanceof Error ? err.message : 'Akses ditolak.') }
+  }
+
+  if (!accessChecked || !unlocked) return <main className="grid min-h-screen place-items-center bg-background px-5 text-foreground"><form onSubmit={unlock} className="w-full max-w-md rounded-3xl border border-border bg-card p-7 shadow-2xl"><p className="eyebrow">DWIPANTARA 2026</p><h1 className="mt-3 font-serif text-4xl font-bold">Buka halaman acara</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Masukkan password untuk mengakses website DWIPANTARA.</p><label className="mt-6 grid gap-2 text-sm font-bold">Password<input autoFocus required type="password" value={accessPassword} onChange={event => setAccessPassword(event.target.value)} className="rounded-xl border border-border bg-background p-3 text-foreground outline-none focus:border-accent" /></label>{accessError && <p className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{accessError}</p>}<button disabled={!accessChecked} className="mt-5 w-full rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground">{accessChecked ? 'Masuk ke website' : 'Memeriksa akses…'}</button></form></main>
 
   return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>

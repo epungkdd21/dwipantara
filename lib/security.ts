@@ -3,7 +3,10 @@ import { cookies } from 'next/headers'
 
 const requestBuckets = new Map<string, { count: number; resetAt: number }>()
 export const CHECKIN_KIOSK_COOKIE = 'dwipantara_checkin_kiosk'
+export const PUBLIC_ACCESS_COOKIE = 'dwipantara_public_access'
 const CHECKIN_KIOSK_TTL_SECONDS = 8 * 60 * 60
+const PUBLIC_ACCESS_TTL_SECONDS = 24 * 60 * 60
+const PUBLIC_ACCESS_PASSWORD = 'Onlineuser@21'
 
 export function getClientIp(request: Request) {
   return request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -77,4 +80,30 @@ export function kioskPasswordMatches(password: unknown) {
 
 export function isKioskPasswordConfigured() {
   return process.env.NODE_ENV !== 'production' || Boolean(process.env.CHECKIN_KIOSK_PASSWORD)
+}
+
+export function createPublicAccessToken() {
+  const expiresAt = Math.floor(Date.now() / 1000) + PUBLIC_ACCESS_TTL_SECONDS
+  const payload = `public:${expiresAt}`
+  return `${payload}.${signKioskPayload(payload)}`
+}
+
+export function isValidPublicAccessToken(token: string | undefined) {
+  if (!token) return false
+  const tokenParts = token.match(/^public:(\d+)\.([A-Za-z0-9_-]+)$/)
+  if (!tokenParts) return false
+  const expiresAt = Number(tokenParts[1])
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return false
+  const payload = `public:${expiresAt}`
+  const expected = signKioskPayload(payload)
+  const receivedBuffer = Buffer.from(tokenParts[2])
+  const expectedBuffer = Buffer.from(expected)
+  return receivedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+}
+
+export function publicPasswordMatches(password: unknown) {
+  if (typeof password !== 'string') return false
+  const receivedBuffer = Buffer.from(password)
+  const expectedBuffer = Buffer.from(PUBLIC_ACCESS_PASSWORD)
+  return receivedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
 }
