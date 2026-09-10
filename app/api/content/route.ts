@@ -8,7 +8,7 @@ const fallback = {
 
 export async function GET() {
   const result = await db.execute(sql`SELECT content FROM site_content WHERE id = 1 LIMIT 1`)
-  const content = { ...(result.rows[0]?.content ?? fallback), date: "Jum'at, 16 Oktober 2026" }
+  const content = { ...(result.rows[0]?.content ?? fallback), date: 'Rabu, 21 Oktober 2026' }
   return NextResponse.json(content)
 }
 
