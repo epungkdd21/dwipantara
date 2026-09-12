@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarDays, Clock3, Mail, MapPin, Menu, Ticket, X } from 'lucide-react'
 import { AmbientSound } from '@/components/ambient-sound'
+import { getActivePricingRule, getPromoText } from '@/lib/pricing'
 
 const BG = 'https://i.pinimg.com/736x/52/d2/c8/52d2c84edfcf25e4119ddab998952ef8.jpg'
 const HERO_BG = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bg-dwipantara.jpg.jpeg-Ntxq1di3M4NzKDqHlG8cY4sITq3E5X.png'
 const LOGO = '/logo-dw26.png'
-const price = 15000
 
 export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -15,13 +15,10 @@ export default function Page() {
   const [qr, setQr] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [accessChecked, setAccessChecked] = useState(false)
-  const [unlocked, setUnlocked] = useState(false)
-  const [accessPassword, setAccessPassword] = useState('')
-  const [accessError, setAccessError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '', quantity: '1' })
   const [content, setContent] = useState<{ eventName?: string; heroTitle?: string; heroTagline?: string; heroDescription?: string; aboutTitle?: string; aboutDescription?: string; ticketPrice?: number; date?: string; time?: string; venue?: string; address?: string; instagram?: string }>({})
-  useEffect(() => { fetch('/api/access', { cache: 'no-store' }).then(response => response.json()).then(data => setUnlocked(Boolean(data.unlocked))).catch(() => setAccessError('Tidak dapat memeriksa akses.')).finally(() => setAccessChecked(true)) }, [])
+  const pricing = getActivePricingRule()
+  const promoText = getPromoText(pricing)
   useEffect(() => { fetch('/api/content').then(response => response.ok ? response.json() : null).then(data => data && setContent(data)).catch(() => undefined) }, [])
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>('[data-reveal]')
@@ -46,18 +43,6 @@ export default function Page() {
     } catch (err) { setError(err instanceof Error ? err.message : 'Checkout gagal') }
     finally { setBusy(false) }
   }
-
-  async function unlock(event: React.FormEvent) {
-    event.preventDefault(); setAccessError('')
-    try {
-      const response = await fetch('/api/access', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: accessPassword }) })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Akses ditolak.')
-      setUnlocked(true); setAccessPassword('')
-    } catch (err) { setAccessError(err instanceof Error ? err.message : 'Akses ditolak.') }
-  }
-
-  if (!accessChecked || !unlocked) return <main className="grid min-h-screen place-items-center bg-background px-5 text-foreground"><form onSubmit={unlock} className="w-full max-w-md rounded-3xl border border-border bg-card p-7 shadow-2xl"><p className="eyebrow">DWIPANTARA 2026</p><h1 className="mt-3 font-serif text-4xl font-bold">Buka halaman acara</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Masukkan password untuk mengakses website DWIPANTARA.</p><label className="mt-6 grid gap-2 text-sm font-bold">Password<input autoFocus required type="password" value={accessPassword} onChange={event => setAccessPassword(event.target.value)} className="rounded-xl border border-border bg-background p-3 text-foreground outline-none focus:border-accent" /></label>{accessError && <p className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{accessError}</p>}<button disabled={!accessChecked} className="mt-5 w-full rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground">{accessChecked ? 'Masuk ke website' : 'Memeriksa akses…'}</button></form></main>
 
   return <main className={`min-h-screen overflow-hidden bg-background text-foreground ${overlayOpen ? 'scene-revealed' : ''}`}>
     <div className={`gunungan-overlay ${overlayOpen ? 'open' : ''}`} onClick={() => setOverlayOpen(true)} role="button" aria-label="Buka halaman DWIPANTARA" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true) }}>
@@ -86,7 +71,7 @@ export default function Page() {
 
     <section id="lokasi" data-reveal className="reveal mx-auto max-w-6xl px-5 py-24 lg:px-8"><div className="grid gap-12 md:grid-cols-2"><div><p className="eyebrow">03 / Waktu & lokasi</p><h2 className="section-title">Datang dan<br /><em>jadilah bagian.</em></h2></div><div className="grid gap-4"><div className="info-row"><CalendarDays /><div><strong>{content.date ?? 'Rabu, 21 Oktober 2026'}</strong><p>Rabu</p></div></div><div className="info-row"><Clock3 /><div><strong>{content.time ?? "Ba'da Isya – 22.38 WIB"}</strong><p>Pementasan malam</p></div></div><div className="info-row"><MapPin /><div><strong>Lapangan Futsal<br />Pesantren Jagat &apos;Arsy BSD</strong><p>{content.address ?? "Serpong, Tangsel, Banten"}</p></div></div></div></div></section>
 
-    <section id="tiket" data-reveal className="reveal bg-secondary px-5 py-24 lg:px-8"><div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[.9fr_1.1fr] md:items-start"><div><p className="eyebrow">04 / Tiket masuk</p><h2 className="section-title">Satu tiket,<br /><em>seribu cerita.</em></h2><p className="mt-6 max-w-md text-base leading-8 tracking-wide text-muted-foreground">Tiket festival berlaku untuk satu hari pilihanmu dan sudah termasuk akses seluruh pertunjukan utama.</p><div className="mt-8 flex items-center gap-3"><Ticket className="text-accent" /><span className="text-2xl font-bold">Rp{price.toLocaleString('id-ID')} <small className="text-sm font-normal text-muted-foreground">/ orang</small></span></div></div><form onSubmit={buyTicket} className="rounded-3xl border border-border bg-card p-6 shadow-xl md:p-8"><h3 className="mb-6 font-serif text-2xl font-bold">Pesan tiket sekarang</h3><div className="grid gap-4"><label>Nama lengkap<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nama kamu" /></label><label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="nama@email.com" /></label><label>Nomor WhatsApp<input required value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="08xxxxxxxxxx" /></label><label>Jumlah tiket<input required type="number" min="1" max="10" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></label></div>{error && <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}<button disabled={busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3.5 font-bold text-primary-foreground disabled:opacity-60">{busy ? 'Menyiapkan pembayaran…' : 'Lanjut ke pembayaran'} <ArrowRight size={18} /></button></form></div></section>
+    <section id="tiket" data-reveal className="reveal bg-secondary px-5 py-24 lg:px-8"><div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[.9fr_1.1fr] md:items-start"><div><p className="eyebrow">04 / Tiket masuk</p><h2 className="section-title">Satu tiket,<br /><em>seribu cerita.</em></h2><p className="mt-6 max-w-md text-base leading-8 tracking-wide text-muted-foreground">Tiket festival berlaku untuk satu hari pilihanmu dan sudah termasuk akses seluruh pertunjukan utama.</p><div className="mt-8 flex items-center gap-3"><Ticket className="text-accent" /><div><span className="text-2xl font-bold">Rp{pricing.basePrice.toLocaleString('id-ID')} <small className="text-sm font-normal text-muted-foreground">/ orang</small></span>{promoText && <p className="mt-2 text-sm font-semibold text-accent">{promoText}</p>}</div></div></div><form onSubmit={buyTicket} className="rounded-3xl border border-border bg-card p-6 shadow-xl md:p-8"><h3 className="mb-6 font-serif text-2xl font-bold">Pesan tiket sekarang</h3><div className="grid gap-4"><label>Nama lengkap<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nama kamu" /></label><label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="nama@email.com" /></label><label>Nomor WhatsApp<input required value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="08xxxxxxxxxx" /></label><label>Jumlah tiket<input required type="number" min="1" max="10" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></label></div>{error && <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}<button disabled={busy} className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3.5 font-bold text-primary-foreground disabled:opacity-60">{busy ? 'Menyiapkan pembayaran…' : 'Lanjut ke pembayaran'} <ArrowRight size={18} /></button></form></div></section>
 
 
     <AmbientSound startWhenOpen={overlayOpen} />
