@@ -5,8 +5,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { createTicketsPdf } from '@/lib/ticket-pdf'
 import { getAppUrl, getTicketUrl } from '@/lib/app-url'
-
-const TICKET_PRICE = 15_000
+import { getPayKitaOrder } from '@/lib/paykita'
 
 type PaidTicket = { attendee_name: string; attendee_email: string; attendee_whatsapp: string; ticket_code: string; ticket_number: number; payment_status: string }
 
@@ -18,7 +17,8 @@ export async function sendPaidTicketNotifications(orderId: string) {
   const appUrl = getAppUrl()
   const pdf = await createTicketsPdf(orderId, tickets, appUrl)
   const ticketLinks = tickets.map((ticket) => getTicketUrl(ticket.ticket_code))
-  const total = tickets.length * TICKET_PRICE
+  const paymentOrder = await getPayKitaOrder(orderId)
+  const total = paymentOrder.base_amount
   const attendeeName = tickets[0].attendee_name
   const formattedTotal = `Rp${total.toLocaleString('id-ID')}`
   const logo = await readFile(join(process.cwd(), 'public', 'logo-dw26.png'))
