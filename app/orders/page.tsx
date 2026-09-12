@@ -30,6 +30,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<PublicOrder[]>([])
   const [query, setQuery] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('all')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -46,9 +48,12 @@ export default function OrdersPage() {
     return orders.filter((order) => {
       const matchesQuery = !normalized || `${order.ticket_code} ${order.attendee_name}`.toLowerCase().includes(normalized)
       const matchesStatus = paymentStatus === 'all' || order.payment_status === paymentStatus
-      return matchesQuery && matchesStatus
+      const orderDate = order.created_at.slice(0, 10)
+      const matchesStartDate = !startDate || orderDate >= startDate
+      const matchesEndDate = !endDate || orderDate <= endDate
+      return matchesQuery && matchesStatus && matchesStartDate && matchesEndDate
     })
-  }, [orders, paymentStatus, query])
+  }, [endDate, orders, paymentStatus, query, startDate])
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-10">
@@ -87,6 +92,18 @@ export default function OrdersPage() {
                 <option value="cancelled">Dibatalkan</option>
               </select>
             </label>
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-sm">
+              <span className="font-semibold text-muted-foreground">Tanggal</span>
+              <label className="flex items-center gap-2">
+                <span className="sr-only">Tanggal mulai</span>
+                <input type="date" value={startDate} max={endDate || undefined} onChange={(event) => setStartDate(event.target.value)} aria-label="Tanggal mulai" className="bg-transparent py-1 outline-none" />
+              </label>
+              <span className="text-muted-foreground">sampai</span>
+              <label className="flex items-center gap-2">
+                <span className="sr-only">Tanggal akhir</span>
+                <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} aria-label="Tanggal akhir" className="bg-transparent py-1 outline-none" />
+              </label>
+            </div>
           </div>
         </section>
 
