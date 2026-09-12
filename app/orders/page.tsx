@@ -29,6 +29,7 @@ function statusClass(status: string) {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<PublicOrder[]>([])
   const [query, setQuery] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -42,9 +43,12 @@ export default function OrdersPage() {
 
   const filteredOrders = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    if (!normalized) return orders
-    return orders.filter((order) => `${order.ticket_code} ${order.attendee_name}`.toLowerCase().includes(normalized))
-  }, [orders, query])
+    return orders.filter((order) => {
+      const matchesQuery = !normalized || `${order.ticket_code} ${order.attendee_name}`.toLowerCase().includes(normalized)
+      const matchesStatus = paymentStatus === 'all' || order.payment_status === paymentStatus
+      return matchesQuery && matchesStatus
+    })
+  }, [orders, paymentStatus, query])
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-10">
@@ -67,11 +71,23 @@ export default function OrdersPage() {
 
         <section className="mt-8 flex flex-wrap items-center justify-between gap-4" aria-label="Ringkasan daftar order">
           <div className="flex items-center gap-3 text-sm text-muted-foreground"><Ticket size={18} className="text-accent" /><span><strong className="text-foreground">{orders.length}</strong> tiket tercatat</span></div>
-          <label className="flex min-w-64 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm">
-            <Search size={16} className="text-muted-foreground" />
-            <span className="sr-only">Cari order atau nama</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari kode atau nama" className="bg-transparent py-1 outline-none" />
-          </label>
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+            <label className="flex min-w-64 flex-1 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm sm:flex-none">
+              <Search size={16} className="text-muted-foreground" />
+              <span className="sr-only">Cari order atau nama</span>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari kode atau nama" className="min-w-0 flex-1 bg-transparent py-1 outline-none" />
+            </label>
+            <label className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm">
+              <span className="sr-only">Filter status pembayaran</span>
+              <select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)} className="bg-transparent py-1 font-semibold outline-none">
+                <option value="all">Semua status</option>
+                <option value="paid">Lunas</option>
+                <option value="pending">Menunggu pembayaran</option>
+                <option value="expired">Kedaluwarsa</option>
+                <option value="cancelled">Dibatalkan</option>
+              </select>
+            </label>
+          </div>
         </section>
 
         <section className="mt-5 overflow-hidden rounded-3xl border border-border bg-card" aria-live="polite">
