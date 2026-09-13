@@ -9,7 +9,29 @@ function getPaymentKitaBaseUrl() {
 const PAYMENTKITA_BASE_URL = getPaymentKitaBaseUrl()
 const PAYMENTKITA_MERCHANT_ID = process.env.PAYMENTKITA_MERCHANT_ID
 const PAYMENTKITA_SECRET_KEY = process.env.PAYMENTKITA_SECRET_KEY
-const PAYMENTKITA_METHOD = process.env.PAYMENTKITA_METHOD || 'DANA'
+export const PAYMENT_METHODS = [
+  { code: 'BRIVA', label: 'BRI Virtual Account', settlement: 'H+1' },
+  { code: 'BNIVA', label: 'BNI Virtual Account', settlement: 'H+0 (realtime)' },
+  { code: 'MANDIRIVA', label: 'Mandiri Virtual Account', settlement: 'H+0 (realtime)' },
+  { code: 'BSIVA', label: 'BSI Virtual Account', settlement: 'H+1' },
+  { code: 'QRISREALTIME', label: 'QRIS Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'DANA', label: 'DANA', settlement: 'H+1' },
+  { code: 'SHOPEEPAY', label: 'ShopeePay', settlement: 'H+1' },
+  { code: 'OVO', label: 'OVO', settlement: 'H+1' },
+  { code: 'GOPAY', label: 'GoPay', settlement: 'H+1' },
+  { code: 'DANA_REALTIME', label: 'DANA Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'SHOPEEPAY_REALTIME', label: 'ShopeePay Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'GOPAY_REALTIME', label: 'GoPay Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'OVO_REALTIME', label: 'OVO Realtime', settlement: 'H+0 (realtime)' },
+] as const
+
+export type PaymentMethodCode = (typeof PAYMENT_METHODS)[number]['code']
+
+const PAYMENT_METHOD_CODES = new Set<string>(PAYMENT_METHODS.map(method => method.code))
+
+export function isPaymentMethodCode(value: unknown): value is PaymentMethodCode {
+  return typeof value === 'string' && PAYMENT_METHOD_CODES.has(value)
+}
 
 type PaymentKitaResponse = Record<string, unknown>
 
@@ -19,7 +41,13 @@ export type PayKitaOrder = {
   status: 'pending' | 'paid' | 'expired' | 'cancelled'
   base_amount: number
   pay_amount: number
+  payment_method?: PaymentMethodCode
+  payment_method_label?: string
   qris?: string
+  qr_image?: string
+  virtual_account?: string
+  account_number?: string
+  payment_code?: string
   checkout_url: string
   expires_at?: string
 }
@@ -45,13 +73,26 @@ function normalizeOrder(data: PaymentKitaResponse, input: { reference: string; a
   const id = String(getValue(nested, 'id', 'order_id', 'trx_id', 'transaction_id', 'ref_id') || input.reference)
   const checkoutUrl = String(getValue(nested, 'pay_url', 'payment_url', 'checkout_url', 'url', 'link') || '')
   if (!checkoutUrl) throw new Error('PaymentKita tidak mengembalikan URL pembayaran.')
+  const method = String(getValue(nested, 'metode', 'method', 'payment_method', 'channel') || '')
+  const methodInfo = PAYMENT_METHODS.find((item) => item.code === method)
+  const qrValue = getValue(nested, 'qris', 'qr_string', 'qr_code')
+  const qrImage = getValue(nested, 'qr_image', 'qr_url', 'qr_image_url')
+  const accountNumber = getValue(nested, 'virtual_account', 'va_number', 'account_number', 'nomor_va')
+  const paymentCode = getValue(nested, 'payment_code', 'kode_bayar', 'bill_number', 'billing_code')
+
   return {
     id,
     reference: String(getValue(nested, 'ref_id', 'reference') || input.reference),
     status: normalizeStatus(getValue(nested, 'status', 'payment_status', 'state')),
     base_amount: Number(getValue(nested, 'nominal', 'amount', 'base_amount') || input.amount),
     pay_amount: Number(getValue(nested, 'pay_amount', 'total', 'amount', 'nominal') || input.amount),
-    qris: typeof getValue(nested, 'qris', 'qr_string') === 'string' ? String(getValue(nested, 'qris', 'qr_string')) : undefined,
+    payment_method: isPaymentMethodCode(method) ? method : undefined,
+    payment_method_label: methodInfo?.label,
+    qris: typeof qrValue === 'string' ? qrValue : undefined,
+    qr_image: typeof qrImage === 'string' ? qrImage : undefined,
+    virtual_account: typeof accountNumber === 'string' ? accountNumber : undefined,
+    account_number: typeof accountNumber === 'string' ? accountNumber : undefined,
+    payment_code: typeof paymentCode === 'string' ? paymentCode : undefined,
     checkout_url: checkoutUrl,
     expires_at: typeof getValue(nested, 'expired_at', 'expires_at') === 'string' ? String(getValue(nested, 'expired_at', 'expires_at')) : undefined,
   }
@@ -78,6 +119,8 @@ export async function createPayKitaOrder(input: {
   whatsapp: string
   amount: number
   quantity: number
+  paymentMethod: PaymentMethodCode
+  ewalletPhone?: string
 }): Promise<PayKitaOrder> {
   requireCredentials()
   const appUrl = getAppUrl()
@@ -86,7 +129,8 @@ export async function createPayKitaOrder(input: {
     secret: PAYMENTKITA_SECRET_KEY!,
     ref_id: input.reference,
     nominal: String(input.amount),
-    metode: PAYMENTKITA_METHOD,
+    metode: input.paymentMethod,
+    ...(input.ewalletPhone ? { nomor: input.ewalletPhone, nomor_hp: input.ewalletPhone, phone: input.ewalletPhone } : {}),
   })
 
   let response: Response
