@@ -120,6 +120,7 @@ export async function createPayKitaOrder(input: {
   amount: number
   quantity: number
   paymentMethod: PaymentMethodCode
+  ewalletPhone?: string
 }): Promise<PayKitaOrder> {
   requireCredentials()
   const appUrl = getAppUrl()
@@ -129,6 +130,7 @@ export async function createPayKitaOrder(input: {
     ref_id: input.reference,
     nominal: String(input.amount),
     metode: input.paymentMethod,
+    ...(input.ewalletPhone ? { nomor: input.ewalletPhone, nomor_hp: input.ewalletPhone, phone: input.ewalletPhone } : {}),
   })
 
   let response: Response

@@ -126,6 +126,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   const isVirtualAccount = Boolean(order?.virtual_account || order?.account_number)
   const isPaymentCode = Boolean(order?.payment_code && !isVirtualAccount)
   const isQrPayment = Boolean(order?.qris || order?.qr_image)
+  const isEwallet = ['DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'DANA_REALTIME', 'OVO_REALTIME', 'GOPAY_REALTIME', 'SHOPEEPAY_REALTIME'].includes(order?.payment_method || '')
 
   async function copyPaymentValue() {
     if (!accountValue) return
@@ -151,7 +152,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           <section className="rounded-3xl border border-border bg-card p-6 shadow-xl md:p-9">
             <p className="eyebrow">Pembayaran tiket</p>
             <h1 className="mt-3 font-serif text-4xl font-bold text-balance md:text-5xl">{statusLabel}</h1>
-            <p className="mt-4 leading-7 text-muted-foreground">Gunakan QR di bawah ini untuk menyelesaikan pembayaran tiket festival. Status akan diperbarui otomatis.</p>
+            <p className="mt-4 leading-7 text-muted-foreground">Selesaikan pembayaran dengan instruksi resmi dari PaymentKita. Status akan diperbarui otomatis.</p>
             <div className="mt-8 flex items-center justify-between border-y border-border py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[.18em] text-muted-foreground">ID Order</p>
@@ -180,7 +181,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
             {isPaymentCode && accountValue && !isPaid && !isClosed && <div className="mt-5 rounded-2xl border border-border bg-card p-4 text-left"><p className="text-xs font-bold uppercase tracking-[.16em] text-muted-foreground">Kode pembayaran</p><p className="mt-2 break-all font-mono text-xl font-bold tracking-wide">{accountValue}</p><button onClick={copyPaymentValue} className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-bold transition hover:border-accent hover:text-accent"><Copy size={14} /> {copied ? 'Tersalin' : 'Salin kode'}</button></div>}
             {!isPaid && !isClosed && isQrPayment && <p className="mt-4 text-sm leading-6 text-muted-foreground">Buka aplikasi pembayaran pilihanmu, lalu scan QR ini.</p>}
             {!isPaid && !isClosed && !isQrPayment && !isVirtualAccount && !isPaymentCode && <p className="mt-4 text-sm leading-6 text-muted-foreground">Lanjutkan pembayaran melalui halaman resmi PaymentKita.</p>}
-            {order?.checkout_url && !isPaid && !isClosed && <a href={order.checkout_url} target="_blank" rel="noreferrer" className="mt-6 inline-flex rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90">Buka halaman pembayaran</a>}
+            {order?.checkout_url && !isPaid && !isClosed && <a href={order.checkout_url} target="_blank" rel="noreferrer" className="mt-6 inline-flex rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90">{isEwallet ? 'Lanjutkan ke e-wallet' : 'Buka halaman pembayaran'}</a>}
             {isPaid && <div className="mt-6 rounded-2xl border border-accent/30 bg-accent/10 p-4 text-left">
               <p className="font-bold text-foreground">Tiket siap digunakan</p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">Kami mengarahkanmu ke halaman tiket. Kamu juga bisa membukanya sekarang untuk mencetak atau menyimpan PDF.</p>
