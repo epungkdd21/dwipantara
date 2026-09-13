@@ -68,24 +68,28 @@ function normalizeStatus(value: unknown): PayKitaOrder['status'] {
   return 'pending'
 }
 
-function normalizeOrder(data: PaymentKitaResponse, input: { reference: string; amount: number }): PayKitaOrder {
+function normalizeOrder(data: PaymentKitaResponse, input: { reference: string; amount: number; paymentMethod?: PaymentMethodCode }): PayKitaOrder {
   const nested = (getValue(data, 'data', 'result', 'order') as PaymentKitaResponse | undefined) || data
   const id = String(getValue(nested, 'id', 'order_id', 'trx_id', 'transaction_id', 'ref_id') || input.reference)
   const checkoutUrl = String(getValue(nested, 'pay_url', 'payment_url', 'checkout_url', 'url', 'link') || '')
-  if (!checkoutUrl) throw new Error('PaymentKita tidak mengembalikan URL pembayaran.')
-  const method = String(getValue(nested, 'metode', 'method', 'payment_method', 'channel') || '')
+  const method = String(getValue(nested, 'metode', 'method', 'payment_method', 'channel') || input.paymentMethod || '')
+  const qrLink = getValue(nested, 'qr_link', 'qr_image', 'qr_url', 'qr_image_url')
+  const qrString = getValue(nested, 'qr_string', 'qris', 'qr_code')
+  const totalAmount = getValue(nested, 'total_bayar', 'pay_amount', 'total', 'amount', 'nominal')
+  const responseStatus = getValue(data, 'status') ?? getValue(nested, 'status', 'payment_status', 'state')
+  if (!checkoutUrl && !qrLink && !qrString) throw new Error('PaymentKita tidak mengembalikan detail pembayaran.')
   const methodInfo = PAYMENT_METHODS.find((item) => item.code === method)
-  const qrValue = getValue(nested, 'qris', 'qr_string', 'qr_code')
-  const qrImage = getValue(nested, 'qr_image', 'qr_url', 'qr_image_url')
+  const qrValue = qrString
+  const qrImage = qrLink
   const accountNumber = getValue(nested, 'virtual_account', 'va_number', 'account_number', 'nomor_va')
   const paymentCode = getValue(nested, 'payment_code', 'kode_bayar', 'bill_number', 'billing_code')
 
   return {
     id,
     reference: String(getValue(nested, 'ref_id', 'reference') || input.reference),
-    status: normalizeStatus(getValue(nested, 'status', 'payment_status', 'state')),
-    base_amount: Number(getValue(nested, 'nominal', 'amount', 'base_amount') || input.amount),
-    pay_amount: Number(getValue(nested, 'pay_amount', 'total', 'amount', 'nominal') || input.amount),
+    status: normalizeStatus(responseStatus),
+    base_amount: Number(getValue(nested, 'total_diterima', 'nominal', 'amount', 'base_amount') || input.amount),
+    pay_amount: Number(totalAmount || input.amount),
     payment_method: isPaymentMethodCode(method) ? method : undefined,
     payment_method_label: methodInfo?.label,
     qris: typeof qrValue === 'string' ? qrValue : undefined,
@@ -145,7 +149,7 @@ export async function createPayKitaOrder(input: {
     throw new Error('Layanan PaymentKita tidak dapat dihubungi. Coba lagi beberapa saat.')
   }
 
-  const order = normalizeOrder(await parseResponse(response), input)
+  const order = normalizeOrder(await parseResponse(response), { ...input, paymentMethod: input.paymentMethod })
   return { ...order, checkout_url: order.checkout_url || `${appUrl}/payment/${encodeURIComponent(order.id)}` }
 }
 
