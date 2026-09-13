@@ -100,7 +100,18 @@ export function calculateTicketTotal(quantity: number, date = new Date()): { tot
   return { total, rule, bundleBreakdown: breakdown || undefined }
 }
 
+function formatPromoDate(date: string): string {
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${date}T00:00:00+07:00`))
+}
+
 export function getPromoText(rule: PricingRule): string | null {
   if (!rule.bundles || rule.bundles.length === 0) return null
-  return rule.bundles.map((b) => b.label).join(' atau ')
+  const bundles = rule.bundles.map((b) => b.label).join(' atau ')
+  const dateRange = `berlaku ${formatPromoDate(rule.startDate)}–${formatPromoDate(rule.endDate)}`
+  return `${bundles}, ${dateRange}`
 }
