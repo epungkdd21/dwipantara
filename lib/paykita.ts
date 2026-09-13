@@ -9,7 +9,29 @@ function getPaymentKitaBaseUrl() {
 const PAYMENTKITA_BASE_URL = getPaymentKitaBaseUrl()
 const PAYMENTKITA_MERCHANT_ID = process.env.PAYMENTKITA_MERCHANT_ID
 const PAYMENTKITA_SECRET_KEY = process.env.PAYMENTKITA_SECRET_KEY
-const PAYMENTKITA_METHOD = process.env.PAYMENTKITA_METHOD || 'DANA'
+export const PAYMENT_METHODS = [
+  { code: 'BRIVA', label: 'BRI Virtual Account', settlement: 'H+1' },
+  { code: 'BNIVA', label: 'BNI Virtual Account', settlement: 'H+0 (realtime)' },
+  { code: 'MANDIRIVA', label: 'Mandiri Virtual Account', settlement: 'H+0 (realtime)' },
+  { code: 'BSIVA', label: 'BSI Virtual Account', settlement: 'H+1' },
+  { code: 'QRISREALTIME', label: 'QRIS Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'DANA', label: 'DANA', settlement: 'H+1' },
+  { code: 'SHOPEEPAY', label: 'ShopeePay', settlement: 'H+1' },
+  { code: 'OVO', label: 'OVO', settlement: 'H+1' },
+  { code: 'GOPAY', label: 'GoPay', settlement: 'H+1' },
+  { code: 'DANA_REALTIME', label: 'DANA Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'SHOPEEPAY_REALTIME', label: 'ShopeePay Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'GOPAY_REALTIME', label: 'GoPay Realtime', settlement: 'H+0 (realtime)' },
+  { code: 'OVO_REALTIME', label: 'OVO Realtime', settlement: 'H+0 (realtime)' },
+] as const
+
+export type PaymentMethodCode = (typeof PAYMENT_METHODS)[number]['code']
+
+const PAYMENT_METHOD_CODES = new Set<string>(PAYMENT_METHODS.map(method => method.code))
+
+export function isPaymentMethodCode(value: unknown): value is PaymentMethodCode {
+  return typeof value === 'string' && PAYMENT_METHOD_CODES.has(value)
+}
 
 type PaymentKitaResponse = Record<string, unknown>
 
@@ -78,6 +100,7 @@ export async function createPayKitaOrder(input: {
   whatsapp: string
   amount: number
   quantity: number
+  paymentMethod: PaymentMethodCode
 }): Promise<PayKitaOrder> {
   requireCredentials()
   const appUrl = getAppUrl()
@@ -86,7 +109,7 @@ export async function createPayKitaOrder(input: {
     secret: PAYMENTKITA_SECRET_KEY!,
     ref_id: input.reference,
     nominal: String(input.amount),
-    metode: PAYMENTKITA_METHOD,
+    metode: input.paymentMethod,
   })
 
   let response: Response
