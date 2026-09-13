@@ -30,8 +30,13 @@ export default function Page() {
   async function buyTicket(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('')
     try {
-      const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-      const data = await response.json()
+      let response: Response
+      try {
+        response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form), signal: AbortSignal.timeout(20_000) })
+      } catch {
+        throw new Error('Koneksi checkout terputus. Periksa internet lalu coba lagi.')
+      }
+      const data = await response.json().catch(() => ({ error: 'Respons checkout tidak valid.' }))
       if (!response.ok) throw new Error(data.error || 'Checkout gagal')
       if (!data.id) throw new Error('Order ID tidak diterima dari PayKita.')
       const query = new URLSearchParams()

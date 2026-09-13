@@ -63,25 +63,31 @@ export async function createPayKitaOrder(input: {
     throw new Error(error instanceof Error ? error.message : 'APP_URL tidak valid.')
   }
 
-  const response = await fetch(`${PAYKITA_BASE_URL}/orders`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.PAYKITA_API_KEY,
-    },
-    body: JSON.stringify({
-      base_amount: input.amount,
-      reference: input.reference,
-      redirect_url: `${appUrl}/payment/${encodeURIComponent(input.reference)}`,
-      webhook_url: `${appUrl}/api/webhook/paykita`,
-      ttl_seconds: 900, // 15 menit
-    }),
-    cache: 'no-store',
-  })
+  let response: Response
+  try {
+    response = await fetch(`${PAYKITA_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.PAYKITA_API_KEY,
+      },
+      body: JSON.stringify({
+        base_amount: input.amount,
+        reference: input.reference,
+        redirect_url: `${appUrl}/payment/${encodeURIComponent(input.reference)}`,
+        webhook_url: `${appUrl}/api/webhook/paykita`,
+        ttl_seconds: 900, // 15 menit
+      }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
+    })
+  } catch {
+    throw new Error('Layanan pembayaran tidak dapat dihubungi. Periksa koneksi lalu coba lagi.')
+  }
 
   const data = (await response.json().catch(() => ({ ok: false }))) as PayKitaResponse
 
-  if (!data.ok || !('data' in data)) {
+  if (!response.ok || !data.ok || !('data' in data)) {
     const error = data as PayKitaErrorResponse
     throw new Error(error.error?.message || 'PayKita tidak dapat membuat order')
   }
