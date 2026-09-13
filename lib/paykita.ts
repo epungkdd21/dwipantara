@@ -41,7 +41,13 @@ export type PayKitaOrder = {
   status: 'pending' | 'paid' | 'expired' | 'cancelled'
   base_amount: number
   pay_amount: number
+  payment_method?: PaymentMethodCode
+  payment_method_label?: string
   qris?: string
+  qr_image?: string
+  virtual_account?: string
+  account_number?: string
+  payment_code?: string
   checkout_url: string
   expires_at?: string
 }
@@ -67,13 +73,26 @@ function normalizeOrder(data: PaymentKitaResponse, input: { reference: string; a
   const id = String(getValue(nested, 'id', 'order_id', 'trx_id', 'transaction_id', 'ref_id') || input.reference)
   const checkoutUrl = String(getValue(nested, 'pay_url', 'payment_url', 'checkout_url', 'url', 'link') || '')
   if (!checkoutUrl) throw new Error('PaymentKita tidak mengembalikan URL pembayaran.')
+  const method = String(getValue(nested, 'metode', 'method', 'payment_method', 'channel') || '')
+  const methodInfo = PAYMENT_METHODS.find((item) => item.code === method)
+  const qrValue = getValue(nested, 'qris', 'qr_string', 'qr_code')
+  const qrImage = getValue(nested, 'qr_image', 'qr_url', 'qr_image_url')
+  const accountNumber = getValue(nested, 'virtual_account', 'va_number', 'account_number', 'nomor_va')
+  const paymentCode = getValue(nested, 'payment_code', 'kode_bayar', 'bill_number', 'billing_code')
+
   return {
     id,
     reference: String(getValue(nested, 'ref_id', 'reference') || input.reference),
     status: normalizeStatus(getValue(nested, 'status', 'payment_status', 'state')),
     base_amount: Number(getValue(nested, 'nominal', 'amount', 'base_amount') || input.amount),
     pay_amount: Number(getValue(nested, 'pay_amount', 'total', 'amount', 'nominal') || input.amount),
-    qris: typeof getValue(nested, 'qris', 'qr_string') === 'string' ? String(getValue(nested, 'qris', 'qr_string')) : undefined,
+    payment_method: isPaymentMethodCode(method) ? method : undefined,
+    payment_method_label: methodInfo?.label,
+    qris: typeof qrValue === 'string' ? qrValue : undefined,
+    qr_image: typeof qrImage === 'string' ? qrImage : undefined,
+    virtual_account: typeof accountNumber === 'string' ? accountNumber : undefined,
+    account_number: typeof accountNumber === 'string' ? accountNumber : undefined,
+    payment_code: typeof paymentCode === 'string' ? paymentCode : undefined,
     checkout_url: checkoutUrl,
     expires_at: typeof getValue(nested, 'expired_at', 'expires_at') === 'string' ? String(getValue(nested, 'expired_at', 'expires_at')) : undefined,
   }

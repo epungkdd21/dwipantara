@@ -44,6 +44,11 @@ export default function Page() {
       if (data.qris) query.set('qris', String(data.qris))
       if (data.qr_image) query.set('qr_image', String(data.qr_image))
       if (data.pay_amount) query.set('amount', String(data.pay_amount))
+      if (data.payment_method) query.set('payment_method', String(data.payment_method))
+      if (data.payment_method_label) query.set('payment_method_label', String(data.payment_method_label))
+      if (data.virtual_account) query.set('virtual_account', String(data.virtual_account))
+      if (data.account_number) query.set('account_number', String(data.account_number))
+      if (data.payment_code) query.set('payment_code', String(data.payment_code))
       if (data.checkout_url) query.set('checkout_url', String(data.checkout_url))
       window.location.assign(`/payment/${encodeURIComponent(data.id)}${query.toString() ? `?${query.toString()}` : ''}`)
     } catch (err) { setError(err instanceof Error ? err.message : 'Checkout gagal') }
