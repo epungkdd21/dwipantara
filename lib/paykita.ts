@@ -155,7 +155,7 @@ export async function createPayKitaOrder(input: {
 
 export async function getPayKitaOrder(id: string): Promise<PayKitaOrder> {
   requireCredentials()
-  const params = new URLSearchParams({ merchant: PAYMENTKITA_MERCHANT_ID!, secret: PAYMENTKITA_SECRET_KEY!, ref_id: id })
-  const response = await fetch(`${PAYMENTKITA_BASE_URL}/v1/status?${params.toString()}`, { cache: 'no-store', signal: AbortSignal.timeout(15_000) })
+  const params = new URLSearchParams({ merchant_id: PAYMENTKITA_MERCHANT_ID!, secret: PAYMENTKITA_SECRET_KEY!, ref_id: id })
+  const response = await fetch(`${PAYMENTKITA_BASE_URL}/v1/check-order?${params.toString()}`, { cache: 'no-store', signal: AbortSignal.timeout(15_000) })
   return normalizeOrder(await parseResponse(response), { reference: id, amount: 0 })
 }
