@@ -102,7 +102,8 @@ async function parseResponse(response: Response) {
   const data = (await response.json().catch(() => ({}))) as PaymentKitaResponse
   const success = response.ok && getValue(data, 'success', 'ok', 'status') !== false
   if (!success) {
-    const message = String(getValue(data, 'message', 'error', 'msg') || `PaymentKita menolak request (HTTP ${response.status}).`)
+    const message = String(getValue(data, 'message', 'error', 'error_msg', 'msg') || `PaymentKita menolak request (HTTP ${response.status}).`)
+    if (response.status === 403 || getValue(data, 'rc') === 403) throw new Error(`PaymentKita menolak request (HTTP 403): ${message}`)
     throw new Error(message)
   }
   return data
