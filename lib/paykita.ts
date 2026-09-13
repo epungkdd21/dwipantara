@@ -1,6 +1,12 @@
 import { getAppUrl } from '@/lib/app-url'
 
-const PAYMENTKITA_BASE_URL = (process.env.PAYMENTKITA_BASE_URL || 'https://api.paymentkita.com').replace(/\/$/, '')
+function getPaymentKitaBaseUrl() {
+  const configured = process.env.PAYMENTKITA_BASE_URL || 'https://api.paymentkita.com'
+  const url = new URL(configured)
+  return url.origin
+}
+
+const PAYMENTKITA_BASE_URL = getPaymentKitaBaseUrl()
 const PAYMENTKITA_MERCHANT_ID = process.env.PAYMENTKITA_MERCHANT_ID
 const PAYMENTKITA_SECRET_KEY = process.env.PAYMENTKITA_SECRET_KEY
 const PAYMENTKITA_METHOD = process.env.PAYMENTKITA_METHOD || 'DANA'
