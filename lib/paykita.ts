@@ -133,7 +133,7 @@ export async function createPayKitaOrder(input: {
     merchant: PAYMENTKITA_MERCHANT_ID!,
     secret: PAYMENTKITA_SECRET_KEY!,
     ref_id: input.reference,
-    nominal: String(input.amount),
+    nominal: String(Math.round(input.amount)),
     metode: input.paymentMethod,
     ...(input.ewalletPhone ? { nomor: input.ewalletPhone, nomor_hp: input.ewalletPhone, phone: input.ewalletPhone } : {}),
   })
