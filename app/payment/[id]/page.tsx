@@ -45,7 +45,20 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       const response = await fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: 'no-store' })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Order tidak ditemukan.')
-      setOrder({ ...data, status: normalizeStatus(data.status) })
+      setOrder(previous => ({
+        ...previous,
+        ...data,
+        status: normalizeStatus(data.status),
+        payment_method: data.payment_method || previous?.payment_method,
+        payment_method_label: data.payment_method_label || previous?.payment_method_label,
+        qris: data.qris || previous?.qris,
+        qr_image: data.qr_image || previous?.qr_image,
+        virtual_account: data.virtual_account || previous?.virtual_account,
+        account_number: data.account_number || previous?.account_number,
+        payment_code: data.payment_code || previous?.payment_code,
+        checkout_url: data.checkout_url || previous?.checkout_url,
+        pay_amount: data.pay_amount || previous?.pay_amount,
+      }))
       setError('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Status pembayaran tidak tersedia.')
