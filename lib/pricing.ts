@@ -78,6 +78,10 @@ export function calculatePaymentUniqueCode(seed: string): number {
   return (hash % 999) + 1
 }
 
+export function calculatePaymentAdminFee(amount: number): number {
+  return Math.ceil(amount * 0.002)
+}
+
 export function calculateTicketTotal(quantity: number, date = new Date()): { total: number; rule: PricingRule; bundleBreakdown?: string } {
   const rule = getActivePricingRule(date)
   let total = 0
