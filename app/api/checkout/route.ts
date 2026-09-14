@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!limit.allowed) return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } })
   try {
     const body = await readJson<{ name?: unknown; email?: unknown; whatsapp?: unknown; quantity?: unknown; payment_method?: unknown; ewallet_phone?: unknown; unique_code_seed?: unknown }>(request, 16_384); const name = String(body.name || '').trim(); const email = String(body.email || '').trim(); const whatsapp = String(body.whatsapp || '').replace(/[^\d+]/g, ''); const quantity = Number(body.quantity); const ewalletPhone = String(body.ewallet_phone || '').replace(/[^\d+]/g, '')
-    if (name.length < 2 || !/^\S+@\S+\.\S+$/.test(email) || whatsapp.length < 8 || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return NextResponse.json({ error: 'Data pembelian tidak valid.' }, { status: 400 })
+    if (name.length < 2 || !/^\S+@\S+\.\S+$/.test(email) || whatsapp.length < 8 || !Number.isInteger(quantity) || quantity < 1 || quantity > 21) return NextResponse.json({ error: 'Maksimal 21 tiket dalam satu order. Silakan buat order baru untuk tiket tambahan.' }, { status: 400 })
     if (!isPaymentMethodCode(body.payment_method) || body.payment_method !== 'QRISREALTIME') return NextResponse.json({ error: 'Saat ini hanya QRIS Realtime yang tersedia.' }, { status: 400 })
     const ewalletMethods = new Set<string>()
     if (ewalletMethods.has(body.payment_method) && ewalletPhone.length < 8) return NextResponse.json({ error: 'Nomor HP e-wallet wajib diisi.' }, { status: 400 })
