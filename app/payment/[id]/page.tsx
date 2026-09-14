@@ -120,14 +120,13 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   const isClosed = order && ['expired', 'cancelled', 'failed'].includes(order.status)
 
   useEffect(() => {
-    const firstTicket = order?.tickets?.[0]?.ticket_code
-    if (!isPaid || !firstTicket || redirecting) return
+    if (!isPaid || !order?.id || redirecting) return
     setRedirecting(true)
     const timer = window.setTimeout(() => {
-      window.location.href = `/tickets/${encodeURIComponent(order.id)}`
-    }, 1800)
+      window.location.replace(`/tickets/${encodeURIComponent(order.id)}`)
+    }, 1200)
     return () => window.clearTimeout(timer)
-  }, [isPaid, order?.tickets, redirecting])
+  }, [isPaid, order?.id, redirecting])
   const statusLabel = useMemo(() => {
     if (isPaid) return 'Pembayaran berhasil'
     if (isClosed) return 'Pembayaran tidak dapat dilanjutkan'
