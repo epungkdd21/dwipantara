@@ -72,6 +72,12 @@ export function getActivePricingRule(date = new Date()): PricingRule {
   return rule || { startDate: '', endDate: '', basePrice: 16500, label: 'Default (harga terakhir)' }
 }
 
+export function calculatePaymentUniqueCode(seed: string): number {
+  let hash = 0
+  for (let index = 0; index < seed.length; index += 1) hash = (hash * 31 + seed.charCodeAt(index)) >>> 0
+  return (hash % 999) + 1
+}
+
 export function calculateTicketTotal(quantity: number, date = new Date()): { total: number; rule: PricingRule; bundleBreakdown?: string } {
   const rule = getActivePricingRule(date)
   let total = 0
