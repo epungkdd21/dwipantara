@@ -18,7 +18,7 @@ export async function sendPaidTicketNotifications(orderId: string) {
   const pdf = await createTicketsPdf(orderId, tickets, appUrl)
   const ticketLinks = tickets.map((ticket) => getTicketUrl(ticket.ticket_code))
   const paymentOrder = await getPayKitaOrder(orderId)
-  const total = paymentOrder.base_amount
+  const total = paymentOrder.pay_amount || paymentOrder.base_amount
   const attendeeName = tickets[0].attendee_name
   const formattedTotal = `Rp${total.toLocaleString('id-ID')}`
   const logo = await readFile(join(process.cwd(), 'public', 'logo-dw26.png'))
