@@ -50,6 +50,10 @@ export default function Page() {
       if (data.account_number) query.set('account_number', String(data.account_number))
       if (data.payment_code) query.set('payment_code', String(data.payment_code))
       if (data.checkout_url) query.set('checkout_url', String(data.checkout_url))
+      if (typeof data.checkout_url === 'string' && data.checkout_url.startsWith('https://pay.paymentkita.com/')) {
+        window.location.assign(data.checkout_url)
+        return
+      }
       window.location.assign(`/payment/${encodeURIComponent(data.id)}${query.toString() ? `?${query.toString()}` : ''}`)
     } catch (err) { setError(err instanceof Error ? err.message : 'Checkout gagal') }
     finally { setBusy(false) }
