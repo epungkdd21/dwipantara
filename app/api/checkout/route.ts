@@ -15,7 +15,9 @@ export async function POST(request: Request) {
     if (ewalletMethods.has(body.payment_method) && ewalletPhone.length < 8) return NextResponse.json({ error: 'Nomor HP e-wallet wajib diisi.' }, { status: 400 })
     const reference = `DW26-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
     const pricing = calculateTicketTotal(quantity)
-    const order = await createPayKitaOrder({ reference, name, email, whatsapp, quantity, amount: pricing.total, paymentMethod: body.payment_method, ewalletPhone })
+    const nominal = Math.round(Number(pricing.total))
+    if (!Number.isSafeInteger(nominal) || nominal <= 0) return NextResponse.json({ error: 'Nominal pembayaran tidak valid.' }, { status: 400 })
+    const order = await createPayKitaOrder({ reference, name, email, whatsapp, quantity, amount: nominal, paymentMethod: body.payment_method, ewalletPhone })
     const ticketCodes = await createPendingTickets({ orderId: order.id, name, email, whatsapp, quantity })
     return NextResponse.json({ ...order, ticket_codes: ticketCodes, ticket_price: pricing.rule.basePrice, pricing_label: pricing.rule.label, bundle_breakdown: pricing.bundleBreakdown })
   } catch (error) { const tooLarge = jsonTooLarge(error); return NextResponse.json({ error: tooLarge ? 'Request terlalu besar.' : error instanceof Error ? error.message : 'Checkout gagal.' }, { status: tooLarge ? 413 : 502 }) }
