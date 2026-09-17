@@ -26,8 +26,9 @@ export async function POST(request: Request) {
     let ticketCode = submittedCode.trim()
     try {
       const parsed = new URL(ticketCode)
-      const match = parsed.pathname.match(/\/ticket\/([^/]+)/)
+      const match = parsed.pathname.match(/\/(?:ticket|tickets)\/([^/]+)/)
       if (match?.[1]) ticketCode = decodeURIComponent(match[1])
+      else if (parsed.searchParams.get('ticket')) ticketCode = parsed.searchParams.get('ticket')!
     } catch { }
     const result = await db.execute(sql`UPDATE tickets SET checkin_status = 'checked_in', checked_in_at = now() WHERE ticket_code = ${ticketCode} AND payment_status = 'paid' AND checkin_status = 'not_checked_in' RETURNING ticket_code, attendee_name, attendee_email, attendee_whatsapp, order_id, ticket_number, quantity, payment_status, checkin_status, checked_in_at, souvenir_status, souvenir_collected_at`)
     const ticket = result.rows[0]
