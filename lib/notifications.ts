@@ -17,10 +17,15 @@ export async function sendPaidTicketNotifications(orderId: string) {
   const appUrl = getAppUrl()
   const pdf = await createTicketsPdf(orderId, tickets, appUrl)
   const ticketLinks = tickets.map((ticket) => getTicketUrl(ticket.ticket_code))
-  const paymentOrder = await getPayKitaOrder(orderId)
-  const total = paymentOrder.pay_amount || paymentOrder.base_amount
+  let formattedTotal = 'sesuai nominal pada halaman pembayaran'
+  try {
+    const paymentOrder = await getPayKitaOrder(orderId)
+    const total = paymentOrder.pay_amount || paymentOrder.base_amount
+    formattedTotal = `Rp${total.toLocaleString('id-ID')}`
+  } catch (error) {
+    console.error('[v0] Gagal mengambil detail nominal PaymentKita, notifikasi tetap dikirim:', error)
+  }
   const attendeeName = tickets[0].attendee_name
-  const formattedTotal = `Rp${total.toLocaleString('id-ID')}`
   const logo = await readFile(join(process.cwd(), 'public', 'logo-dw26.png'))
   const message = [
     `*DWIPANTARA 2026*`,
