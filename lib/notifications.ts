@@ -9,7 +9,9 @@ import { getPayKitaOrder } from '@/lib/paykita'
 
 type PaidTicket = { attendee_name: string; attendee_email: string; attendee_whatsapp: string; ticket_code: string; ticket_number: number; payment_status: string }
 
-export async function sendPaidTicketNotifications(orderId: string) {
+export async function sendPaidTicketNotifications(orderId: string, options: { email?: boolean; whatsapp?: boolean } = {}) {
+  const sendEmail = options.email !== false
+  const sendWhatsapp = options.whatsapp !== false
   const result = await db.execute(sql`SELECT attendee_name, attendee_email, attendee_whatsapp, ticket_code, ticket_number, payment_status FROM tickets WHERE order_id = ${orderId} AND payment_status = 'paid' ORDER BY ticket_number ASC`)
   const tickets = result.rows as unknown as PaidTicket[]
   if (!tickets.length) return
@@ -73,13 +75,13 @@ export async function sendPaidTicketNotifications(orderId: string) {
       </div>
     </div>`
 
-  if (process.env.RESEND_API_KEY && process.env.RESEND_EMAIL_DOMAIN) {
+  if (sendEmail && process.env.RESEND_API_KEY && process.env.RESEND_EMAIL_DOMAIN) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const emailResult = await resend.emails.send({ from: `Dwipantara <noreply@${process.env.RESEND_EMAIL_DOMAIN}>`, to: [tickets[0].attendee_email], subject: `Pembayaran berhasil · Tiket Dwipantara`, text: message, html: emailHtml, attachments: [{ filename: 'logo-dwipantara.png', content: logo, contentId: 'dwipantara-logo' }, { filename: `dwipantara-${orderId}.pdf`, content: pdf }] }, { idempotencyKey: `paid-ticket-email/${orderId}` })
     if (emailResult.error) console.error('[v0] Gagal mengirim email tiket:', emailResult.error.message)
   }
 
-  if (process.env.FONNTE_TOKEN && tickets[0].attendee_whatsapp) {
+  if (sendWhatsapp && process.env.FONNTE_TOKEN && tickets[0].attendee_whatsapp) {
     const logoForm = new FormData()
     logoForm.append('target', tickets[0].attendee_whatsapp)
     logoForm.append('message', '*DWIPANTARA 2026*\nLogo resmi acara')
