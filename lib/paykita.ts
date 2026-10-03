@@ -1,14 +1,8 @@
 import { getAppUrl } from '@/lib/app-url'
 
-function getPaymentKitaBaseUrl() {
-  const configured = process.env.PAYMENTKITA_BASE_URL || 'https://api.paymentkita.com'
-  const url = new URL(configured)
-  return url.origin
-}
+const DIGIKITA_BASE_URL = (process.env.PAYKITA_BASE_URL || 'https://pay.digikita.id/api').replace(/\/$/, '')
+const DIGIKITA_API_KEY = process.env.PAYKITA_API_KEY
 
-const PAYMENTKITA_BASE_URL = getPaymentKitaBaseUrl()
-const PAYMENTKITA_MERCHANT_ID = process.env.PAYMENTKITA_MERCHANT_ID
-const PAYMENTKITA_SECRET_KEY = process.env.PAYMENTKITA_SECRET_KEY
 export const PAYMENT_METHODS = [
   { code: 'QRISREALTIME', label: 'QRIS Realtime', settlement: 'H+0 (realtime)' },
 ] as const
@@ -21,7 +15,7 @@ export function isPaymentMethodCode(value: unknown): value is PaymentMethodCode 
   return typeof value === 'string' && PAYMENT_METHOD_CODES.has(value)
 }
 
-type PaymentKitaResponse = Record<string, unknown>
+type DigiKitaResponse = Record<string, unknown>
 
 export type PayKitaOrder = {
   id: string
@@ -32,77 +26,70 @@ export type PayKitaOrder = {
   payment_method?: PaymentMethodCode
   payment_method_label?: string
   qris?: string
-  qr_image?: string
-  virtual_account?: string
-  account_number?: string
-  payment_code?: string
   checkout_url: string
   expires_at?: string
+  fee_amount?: number
+  unique_code?: number
 }
 
-function getValue(data: PaymentKitaResponse, ...keys: string[]) {
+function getValue(data: DigiKitaResponse, ...keys: string[]) {
   for (const key of keys) {
-    const value = data[key]
-    if (value !== undefined && value !== null) return value
+    if (data[key] !== undefined && data[key] !== null) return data[key]
   }
   return undefined
 }
 
 function normalizeStatus(value: unknown): PayKitaOrder['status'] {
   const status = String(value || 'pending').toLowerCase()
-  if (['success', 'sukses', 'paid', 'settlement', 'completed'].includes(status)) return 'paid'
-  if (['expired', 'kadaluarsa', 'timeout'].includes(status)) return 'expired'
-  if (['cancelled', 'canceled', 'failed', 'gagal'].includes(status)) return 'cancelled'
+  if (status === 'paid') return 'paid'
+  if (status === 'expired') return 'expired'
+  if (status === 'cancelled') return 'cancelled'
   return 'pending'
 }
 
-function normalizeOrder(data: PaymentKitaResponse, input: { reference: string; amount: number; paymentMethod?: PaymentMethodCode }): PayKitaOrder {
-  const nested = (getValue(data, 'data', 'result', 'order') as PaymentKitaResponse | undefined) || data
-  const id = String(getValue(nested, 'id', 'order_id', 'trx_id', 'transaction_id', 'ref_id') || input.reference)
-  const checkoutUrl = String(getValue(nested, 'pay_url', 'payment_url', 'checkout_url', 'url', 'link') || '')
-  const method = String(getValue(nested, 'metode', 'method', 'payment_method', 'channel') || input.paymentMethod || '')
-  const qrLink = getValue(nested, 'qr_link', 'qr_image', 'qr_url', 'qr_image_url')
-  const qrString = getValue(nested, 'qr_string', 'qris', 'qr_code')
-  const totalAmount = getValue(nested, 'total_bayar', 'pay_amount', 'total', 'amount', 'nominal')
-  const responseStatus = getValue(data, 'status') ?? getValue(nested, 'status', 'payment_status', 'state')
-  if (!checkoutUrl && !qrLink && !qrString) throw new Error('PaymentKita tidak mengembalikan detail pembayaran.')
-  const methodInfo = PAYMENT_METHODS.find((item) => item.code === method)
-  const qrValue = qrString
-  const qrImage = qrLink
-  const accountNumber = getValue(nested, 'virtual_account', 'va_number', 'account_number', 'nomor_va')
-  const paymentCode = getValue(nested, 'payment_code', 'kode_bayar', 'bill_number', 'billing_code')
-
+function normalizeOrder(data: DigiKitaResponse, fallback: { reference: string; amount: number }): PayKitaOrder {
+  const order = (getValue(data, 'data') as DigiKitaResponse | undefined) || data
+  const id = String(getValue(order, 'id') || fallback.reference)
+  const status = normalizeStatus(getValue(order, 'status'))
+  const baseAmount = Number(getValue(order, 'base_amount') ?? fallback.amount)
+  const payAmount = Number(getValue(order, 'pay_amount') ?? baseAmount)
+  const checkoutUrl = String(getValue(order, 'checkout_url') || `${getAppUrl()}/payment/${encodeURIComponent(id)}`)
+  if (!Number.isSafeInteger(baseAmount) || baseAmount <= 0 || !Number.isSafeInteger(payAmount) || payAmount <= 0) {
+    throw new Error('DigiKita mengembalikan nominal pembayaran yang tidak valid.')
+  }
   return {
     id,
-    reference: String(getValue(nested, 'ref_id', 'reference') || input.reference),
-    status: normalizeStatus(responseStatus),
-    base_amount: Number(getValue(nested, 'total_diterima', 'nominal', 'amount', 'base_amount') || input.amount),
-    pay_amount: Number(totalAmount || input.amount),
-    payment_method: isPaymentMethodCode(method) ? method : undefined,
-    payment_method_label: methodInfo?.label,
-    qris: typeof qrValue === 'string' ? qrValue : undefined,
-    qr_image: typeof qrImage === 'string' ? qrImage : undefined,
-    virtual_account: typeof accountNumber === 'string' ? accountNumber : undefined,
-    account_number: typeof accountNumber === 'string' ? accountNumber : undefined,
-    payment_code: typeof paymentCode === 'string' ? paymentCode : undefined,
+    reference: String(getValue(order, 'reference') || fallback.reference),
+    status,
+    base_amount: baseAmount,
+    pay_amount: payAmount,
+    payment_method: 'QRISREALTIME',
+    payment_method_label: 'QRIS Realtime',
+    qris: typeof getValue(order, 'qris') === 'string' ? String(getValue(order, 'qris')) : undefined,
     checkout_url: checkoutUrl,
-    expires_at: typeof getValue(nested, 'expired_at', 'expires_at') === 'string' ? String(getValue(nested, 'expired_at', 'expires_at')) : undefined,
+    expires_at: typeof getValue(order, 'expires_at') === 'string' ? String(getValue(order, 'expires_at')) : undefined,
+    fee_amount: Number(getValue(order, 'fee_amount') || 0),
+    unique_code: Number(getValue(order, 'unique_code') || 0),
   }
-}
-
-async function parseResponse(response: Response) {
-  const data = (await response.json().catch(() => ({}))) as PaymentKitaResponse
-  const success = response.ok && getValue(data, 'success', 'ok', 'status') !== false
-  if (!success) {
-    const message = String(getValue(data, 'message', 'error', 'error_msg', 'msg') || `PaymentKita menolak request (HTTP ${response.status}).`)
-    if (response.status === 403 || getValue(data, 'rc') === 403) throw new Error(`PaymentKita menolak request (HTTP 403): ${message}`)
-    throw new Error(message)
-  }
-  return data
 }
 
 function requireCredentials() {
-  if (!PAYMENTKITA_MERCHANT_ID || !PAYMENTKITA_SECRET_KEY) throw new Error('Kredensial PaymentKita belum dikonfigurasi.')
+  if (!DIGIKITA_API_KEY) throw new Error('API key DigiKita belum dikonfigurasi.')
+}
+
+async function requestDigiKita(path: string, init: RequestInit = {}) {
+  const response = await fetch(`${DIGIKITA_BASE_URL}${path}`, {
+    ...init,
+    headers: { 'content-type': 'application/json', 'x-api-key': DIGIKITA_API_KEY!, ...(init.headers || {}) },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(15_000),
+  })
+  const payload = (await response.json().catch(() => ({}))) as DigiKitaResponse
+  if (!response.ok || payload.ok === false) {
+    const error = (payload.error || {}) as DigiKitaResponse
+    throw new Error(String(error.message || `DigiKita menolak request (HTTP ${response.status}).`))
+  }
+  return payload
 }
 
 export async function createPayKitaOrder(input: {
@@ -116,34 +103,21 @@ export async function createPayKitaOrder(input: {
   ewalletPhone?: string
 }): Promise<PayKitaOrder> {
   requireCredentials()
-  const appUrl = getAppUrl()
-  const params = new URLSearchParams({
-    merchant: PAYMENTKITA_MERCHANT_ID!,
-    secret: PAYMENTKITA_SECRET_KEY!,
-    ref_id: input.reference,
-    nominal: String(Math.round(input.amount)),
-    metode: input.paymentMethod,
-    ...(input.ewalletPhone ? { nomor: input.ewalletPhone, nomor_hp: input.ewalletPhone, phone: input.ewalletPhone } : {}),
+  const payload = await requestDigiKita('/orders', {
+    method: 'POST',
+    body: JSON.stringify({
+      base_amount: Math.round(input.amount),
+      reference: input.reference,
+      redirect_url: `${getAppUrl()}/pembayaran-selesai`,
+      webhook_url: `${getAppUrl()}/api/webhook/paykita`,
+      ttl_seconds: 600,
+    }),
   })
-
-  let response: Response
-  try {
-    response = await fetch(`${PAYMENTKITA_BASE_URL}/v1/order?${params.toString()}`, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15_000),
-    })
-  } catch {
-    throw new Error('Layanan PaymentKita tidak dapat dihubungi. Coba lagi beberapa saat.')
-  }
-
-  const order = normalizeOrder(await parseResponse(response), { ...input, paymentMethod: input.paymentMethod })
-  return { ...order, checkout_url: order.checkout_url || `${appUrl}/payment/${encodeURIComponent(order.id)}` }
+  return normalizeOrder(payload, { reference: input.reference, amount: Math.round(input.amount) })
 }
 
 export async function getPayKitaOrder(id: string): Promise<PayKitaOrder> {
   requireCredentials()
-  const params = new URLSearchParams({ merchant_id: PAYMENTKITA_MERCHANT_ID!, secret: PAYMENTKITA_SECRET_KEY!, ref_id: id })
-  const response = await fetch(`${PAYMENTKITA_BASE_URL}/v1/check-order?${params.toString()}`, { cache: 'no-store', signal: AbortSignal.timeout(15_000) })
-  return normalizeOrder(await parseResponse(response), { reference: id, amount: 0 })
+  const payload = await requestDigiKita(`/orders/${encodeURIComponent(id)}`)
+  return normalizeOrder(payload, { reference: id, amount: 1 })
 }

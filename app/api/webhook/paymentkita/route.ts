@@ -7,9 +7,9 @@ const MAX_PAYLOAD_BYTES = 65_536
 
 function isValidSignature(raw: string, request: Request) {
   const signature = request.headers.get('x-paymentkita-signature') || request.headers.get('x-paykita-signature')
-  if (!signature) return true
+  if (!signature) return false
 
-  const secret = process.env.PAYMENTKITA_WEBHOOK_SECRET || process.env.PAYKITA_WEBHOOK_SECRET || process.env.PAYMENTKITA_SECRET_KEY
+  const secret = process.env.PAYKITA_WEBHOOK_SECRET
   if (!secret) return false
 
   const timestamp = request.headers.get('x-paymentkita-timestamp') || request.headers.get('x-paykita-timestamp') || ''

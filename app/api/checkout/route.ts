@@ -24,6 +24,6 @@ export async function POST(request: Request) {
     if (!Number.isSafeInteger(nominal) || nominal <= 0) return NextResponse.json({ error: 'Nominal pembayaran tidak valid.' }, { status: 400 })
     const order = await createPayKitaOrder({ reference, name, email, whatsapp, quantity, amount: nominal, paymentMethod: body.payment_method, ewalletPhone })
     const ticketCodes = await createPendingTickets({ orderId: order.id, name, email, whatsapp, quantity })
-    return NextResponse.json({ ...order, pay_amount: nominal, subtotal, unique_code: uniqueCode, admin_fee: adminFee, ticket_codes: ticketCodes, ticket_price: pricing.rule.basePrice, pricing_label: pricing.rule.label, bundle_breakdown: pricing.bundleBreakdown })
+    return NextResponse.json({ ...order, subtotal, unique_code: order.unique_code || 0, admin_fee: order.fee_amount || 0, ticket_codes: ticketCodes, ticket_price: pricing.rule.basePrice, pricing_label: pricing.rule.label, bundle_breakdown: pricing.bundleBreakdown })
   } catch (error) { const tooLarge = jsonTooLarge(error); return NextResponse.json({ error: tooLarge ? 'Request terlalu besar.' : error instanceof Error ? error.message : 'Checkout gagal.' }, { status: tooLarge ? 413 : 502 }) }
 }
