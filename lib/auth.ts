@@ -3,8 +3,13 @@ import { Pool } from 'pg'
 import { Resend } from 'resend'
 import { getAppUrl } from '@/lib/app-url'
 
-const baseURL = process.env.BETTER_AUTH_URL || getAppUrl()
-const origins = ['http://localhost:3000', getAppUrl(), process.env.V0_RUNTIME_URL, process.env.V0_DEV_APP_URL, process.env.V0_BUILD_URL, process.env.V0_SANDBOX_URL, process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined, process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined].filter((origin): origin is string => Boolean(origin))
+const deploymentUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined
+const baseURL = process.env.BETTER_AUTH_URL || deploymentUrl || process.env.V0_RUNTIME_URL || getAppUrl()
+const origins = ['http://localhost:3000', getAppUrl(), baseURL, process.env.V0_RUNTIME_URL, process.env.V0_DEV_APP_URL, process.env.V0_BUILD_URL, process.env.V0_SANDBOX_URL, deploymentUrl].filter((origin): origin is string => Boolean(origin))
 const authSecret = process.env.BETTER_AUTH_SECRET
 const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
 if (!authSecret && process.env.NODE_ENV === 'production' && !isBuildPhase) throw new Error('BETTER_AUTH_SECRET wajib dikonfigurasi.')
