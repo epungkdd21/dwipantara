@@ -118,6 +118,6 @@ export async function createPayKitaOrder(input: {
 
 export async function getPayKitaOrder(id: string): Promise<PayKitaOrder> {
   requireCredentials()
-  const payload = await requestDigiKita(`/api/orders/${encodeURIComponent(id)}`)
+  const payload = await requestDigiKita(`/orders/${encodeURIComponent(id)}`)
   return normalizeOrder(payload, { reference: id, amount: 1 })
 }
