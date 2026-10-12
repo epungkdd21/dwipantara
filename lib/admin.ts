@@ -9,6 +9,10 @@ function parseEmails(value: string | undefined) {
 }
 
 export async function requireAdminRole() {
+  // Akses sementara memakai password kiosk yang sudah dikonfigurasi.
+  // Cookie kiosk tetap ditandatangani server dan otomatis kedaluwarsa.
+  if (await hasKioskAccess()) return { session: null, role: 'admin' as const }
+
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user?.email) return null
   const email = session.user.email.toLowerCase()
