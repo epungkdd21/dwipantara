@@ -63,6 +63,8 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  const [accessRequired, setAccessRequired] = useState(false);
+  const [password, setPassword] = useState("");
 
   async function load() {
     setError("");
@@ -72,9 +74,10 @@ export default function AdminPage() {
         fetch("/api/admin/stats"),
       ]);
       if (contentResponse.status === 401 || statsResponse.status === 401) {
-        window.location.href = "/sign-in";
+        setAccessRequired(true);
         return;
       }
+      setAccessRequired(false);
       if (!contentResponse.ok || !statsResponse.ok)
         throw new Error("Gagal memuat data dashboard");
       const contentData = await contentResponse.json();
@@ -115,6 +118,25 @@ export default function AdminPage() {
           }
         : current,
     );
+  async function unlockDashboard(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy("unlock");
+    setError("");
+    const response = await fetch("/api/checkin/access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const data = await response.json();
+    setBusy("");
+    if (!response.ok) {
+      setError(data.error ?? "Password sementara salah.");
+      return;
+    }
+    setPassword("");
+    await load();
+  }
+
   async function saveContent() {
     if (!content || dashboard?.role !== "admin") return;
     setBusy("save");
@@ -183,6 +205,23 @@ export default function AdminPage() {
     await authClient.signOut();
     window.location.href = "/sign-in";
   }
+  if (accessRequired)
+    return (
+      <main className="grid min-h-screen place-items-center bg-background px-4">
+        <form onSubmit={unlockDashboard} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <p className="eyebrow">DWIPANTARA 2026 · OPERATIONS</p>
+          <h1 className="mt-2 font-serif text-3xl font-bold">Dashboard admin</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Masukkan password sementara untuk melihat daftar pembeli dan status tiket. Halaman check-in kiosk tetap menggunakan akses yang sama.</p>
+          <label htmlFor="admin-access-password" className="mt-6 block text-sm font-bold">Password sementara</label>
+          <input id="admin-access-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3" autoFocus required />
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          <button type="submit" disabled={busy === "unlock"} className="mt-5 w-full rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground disabled:opacity-50">
+            {busy === "unlock" ? "Memeriksa…" : "Buka dashboard"}
+          </button>
+          <Link href="/" className="mt-4 block text-center text-sm font-bold text-muted-foreground">Kembali ke halaman awal</Link>
+        </form>
+      </main>
+    );
   if (!content || !dashboard)
     return (
       <main className="grid min-h-screen place-items-center bg-background">
