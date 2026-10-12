@@ -82,8 +82,9 @@ export async function sendPaidTicketNotifications(orderId: string, options: { em
   }
 
   if (sendWhatsapp && process.env.FONNTE_TOKEN && tickets[0].attendee_whatsapp) {
+    const whatsappTarget = normalizeWhatsappNumber(tickets[0].attendee_whatsapp)
     const logoForm = new FormData()
-    logoForm.append('target', tickets[0].attendee_whatsapp)
+    logoForm.append('target', whatsappTarget)
     logoForm.append('message', '*DWIPANTARA 2026*\nLogo resmi acara')
     logoForm.append('filename', 'logo-dwipantara.png')
     logoForm.append('file', new Blob([logo], { type: 'image/png' }), 'logo-dwipantara.png')
@@ -91,13 +92,20 @@ export async function sendPaidTicketNotifications(orderId: string, options: { em
     if (!logoResponse.ok) console.error('[v0] Gagal mengirim logo WhatsApp:', logoResponse.status)
 
     const form = new FormData()
-    form.append('target', tickets[0].attendee_whatsapp)
+    form.append('target', whatsappTarget)
     form.append('message', message)
     form.append('filename', `dwipantara-${orderId}.pdf`)
     form.append('file', new Blob([pdf], { type: 'application/pdf' }), `dwipantara-${orderId}.pdf`)
     const response = await fetch('https://api.fonnte.com/send', { method: 'POST', headers: { Authorization: process.env.FONNTE_TOKEN }, body: form })
     if (!response.ok) console.error('[v0] Gagal mengirim WhatsApp tiket:', response.status)
   }
+}
+
+function normalizeWhatsappNumber(value: string) {
+  const digits = value.replace(/\D/g, '')
+  if (digits.startsWith('62')) return digits
+  if (digits.startsWith('0')) return `62${digits.slice(1)}`
+  return digits
 }
 
 function escapeHtml(value: string) { return value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character] || character) }
