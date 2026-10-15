@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     if (ewalletMethods.has(body.payment_method) && ewalletPhone.length < 8) return NextResponse.json({ error: 'Nomor HP e-wallet wajib diisi.' }, { status: 400 })
     const reference = `DW26-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
     const pricing = calculateTicketTotal(quantity)
+    if (pricing.rule.salesOpen === false) return NextResponse.json({ error: pricing.rule.label }, { status: 409 })
     const uniqueCodeSeed = String(body.unique_code_seed || '').trim()
     if (uniqueCodeSeed.length < 8 || uniqueCodeSeed.length > 128) return NextResponse.json({ error: 'Kode pembayaran tidak valid. Muat ulang halaman lalu coba lagi.' }, { status: 400 })
     const uniqueCode = calculatePaymentUniqueCode(uniqueCodeSeed)

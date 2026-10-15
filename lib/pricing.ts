@@ -11,6 +11,7 @@ export type PricingRule = {
   startDate: string
   endDate: string
   basePrice: number
+  salesOpen?: boolean
   bundles?: Array<{ size: number; price: number; label: string }>
   label: string
 }
@@ -54,7 +55,7 @@ const PRICING_RULES: PricingRule[] = [
   },
   {
     startDate: '2026-10-10',
-    endDate: '2026-10-21',
+    endDate: '2026-10-14',
     basePrice: 21000,
     bundles: [
       { size: 10, price: 165000, label: 'Group 10 tiket Rp165.000' },
@@ -62,14 +63,38 @@ const PRICING_RULES: PricingRule[] = [
       { size: 3, price: 50000, label: 'Triples 3 tiket Rp50.000' },
       { size: 2, price: 38000, label: 'Doubles 2 tiket Rp38.000' },
     ],
-    label: 'Harga premium 10-21 Okt dengan bundling lengkap',
+    label: 'Harga premium 10-14 Okt dengan bundling lengkap',
+  },
+  {
+    startDate: '2026-10-15',
+    endDate: '2026-10-18',
+    basePrice: 16500,
+    bundles: [{ size: 5, price: 65000, label: 'Bundling 5 tiket Rp65.000' }],
+    label: 'Harga 15-18 Okt dengan bundling',
+  },
+  {
+    startDate: '2026-10-19',
+    endDate: '2026-10-20',
+    basePrice: 0,
+    salesOpen: false,
+    label: 'Pemesanan sementara ditutup. Dibuka kembali 21 Oktober 2026.',
+  },
+  {
+    startDate: '2026-10-21',
+    endDate: '2026-10-21',
+    basePrice: 50000,
+    label: 'Harga khusus 21 Oktober',
   },
 ]
 
 export function getActivePricingRule(date = new Date()): PricingRule {
   const dateStr = jakartaDate(date)
   const rule = PRICING_RULES.find((r) => dateStr >= r.startDate && dateStr <= r.endDate)
-  return rule || { startDate: '', endDate: '', basePrice: 16500, label: 'Default (harga terakhir)' }
+  if (rule) return rule
+  if (dateStr > '2026-10-21') {
+    return { startDate: '', endDate: '', basePrice: 0, salesOpen: false, label: 'Penjualan tiket telah ditutup.' }
+  }
+  return { startDate: '', endDate: '', basePrice: 16500, label: 'Default (harga terakhir)' }
 }
 
 export function calculatePaymentUniqueCode(seed: string): number {
@@ -84,6 +109,7 @@ export function calculatePaymentAdminFee(amount: number): number {
 
 export function calculateTicketTotal(quantity: number, date = new Date()): { total: number; rule: PricingRule; bundleBreakdown?: string } {
   const rule = getActivePricingRule(date)
+  if (rule.salesOpen === false) return { total: 0, rule }
   let total = 0
   let breakdown = ''
 
