@@ -28,6 +28,17 @@ type Order = {
   ticket_code: string;
   created_at: string;
 };
+type PaidOrder = {
+  order_id: string;
+  attendee_name: string;
+  attendee_email: string;
+  attendee_whatsapp: string;
+  quantity: number;
+  payment_amount: number | null;
+  unit_price: number;
+  order_total: number;
+  created_at: string;
+};
 type Dashboard = {
   role: "admin" | "operator";
   summary: {
@@ -38,7 +49,22 @@ type Dashboard = {
     orders?: number;
   };
   orders: Order[];
+  paidOrders: PaidOrder[];
 };
+
+function formatRupiah(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function csvCell(value: string | number) {
+  const text = String(value);
+  const safeText = /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replaceAll('"', '""')}"`;
+}
 
 const editableFields = [
   ["eventName", "Nama acara"],
@@ -57,7 +83,9 @@ const editableFields = [
 export default function AdminPage() {
   const [content, setContent] = useState<Content | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
-  const [tab, setTab] = useState<"overview" | "content" | "orders">("overview");
+  const [tab, setTab] = useState<
+    "overview" | "content" | "orders" | "paid-report"
+  >("overview");
   const [query, setQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [message, setMessage] = useState("");
@@ -100,6 +128,7 @@ export default function AdminPage() {
             order.order_id,
             order.attendee_name,
             order.attendee_email,
+            order.attendee_whatsapp,
             order.ticket_code,
           ]
             .join(" ")
@@ -107,6 +136,21 @@ export default function AdminPage() {
             .includes(query.toLowerCase()),
       ) ?? [],
     [dashboard, paymentFilter, query],
+  );
+  const filteredPaidOrders = useMemo(
+    () =>
+      dashboard?.paidOrders.filter((order) =>
+        [
+          order.order_id,
+          order.attendee_name,
+          order.attendee_email,
+          order.attendee_whatsapp,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      ) ?? [],
+    [dashboard, query],
   );
   const update = (key: string, value: string) =>
     setContent((current) =>
@@ -201,6 +245,78 @@ export default function AdminPage() {
     anchor.click();
     URL.revokeObjectURL(url);
   }
+  function exportPaidCsv() {
+    const header = [
+      "ID Order",
+      "Nama pembeli",
+      "WhatsApp",
+      "Email",
+      "Jumlah tiket",
+      "Nominal pembayaran terkonfirmasi (Rp)",
+      "Harga satuan rata-rata (Rp)",
+      "Total tiket (Rp)",
+    ];
+    const rows = filteredPaidOrders.map((order) =>
+      [
+        order.order_id,
+        order.attendee_name,
+        order.attendee_whatsapp,
+        order.attendee_email,
+        order.quantity,
+        order.payment_amount ?? "",
+        order.unit_price.toFixed(2),
+        order.order_total,
+      ]
+        .map(csvCell)
+        .join(","),
+    );
+    const blob = new Blob(
+      [[header.map(csvCell).join(","), ...rows].join("\n")],
+      { type: "text/csv;charset=utf-8" },
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "dwipantara-rekap-tiket-lunas.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+  async function syncHistoricalPayments() {
+    setBusy("backfill");
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/payments/backfill", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Gagal menyinkronkan nominal order lama.");
+      }
+      await load();
+      setMessage(
+        `${data.synced} order berhasil disinkronkan. ${data.remaining} order masih belum memiliki nominal pembayaran.`,
+      );
+      if (data.failed?.length) {
+        setError(
+          `Gagal menyinkronkan: ${data.failed
+            .map(
+              (failure: { order_id: string; error: string }) =>
+                `${failure.order_id} — ${failure.error}`,
+            )
+            .join("; ")}`,
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Gagal menyinkronkan nominal order lama.",
+      );
+    } finally {
+      setBusy("");
+    }
+  }
   async function signOut() {
     await authClient.signOut();
     window.location.href = "/sign-in";
@@ -278,6 +394,7 @@ export default function AdminPage() {
         {[
           ["overview", "Ringkasan"],
           ["orders", "Order & Tiket"],
+          ["paid-report", "Rekap Lunas"],
           ...(dashboard.role === "admin"
             ? [["content", "Konten & Harga"]]
             : []),
@@ -459,6 +576,145 @@ export default function AdminPage() {
             {!filteredOrders.length && (
               <p className="py-10 text-center text-sm text-muted-foreground">
                 Belum ada tiket yang cocok.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+      {tab === "paid-report" && (
+        <section className="mx-auto mt-6 max-w-7xl rounded-3xl border border-border bg-card p-5 sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-2xl font-bold">
+                Rekap tiket lunas
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nominal bruto yang dibayar pelanggan sesuai gateway, sebelum
+                potongan settlement; total harga tiket dihitung terpisah.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {filteredPaidOrders.some((order) => order.payment_amount === null) && (
+                <button
+                  onClick={syncHistoricalPayments}
+                  disabled={busy === "backfill"}
+                  className="rounded-full border border-border px-3 py-2 text-sm font-bold disabled:opacity-50"
+                >
+                  {busy === "backfill"
+                    ? "Menyinkronkan…"
+                    : "Sinkronkan nominal lama"}
+                </button>
+              )}
+              <label className="flex items-center gap-2 rounded-full border border-border px-3">
+                <Search size={16} />
+                <input
+                  aria-label="Cari pembeli tiket lunas"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Cari nama atau kontak…"
+                  className="w-40 bg-transparent py-2 text-sm outline-none sm:w-56"
+                />
+              </label>
+              <button
+                onClick={exportPaidCsv}
+                className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm font-bold"
+              >
+                <Download size={16} /> Unduh CSV
+              </button>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl border border-border p-4">
+              <p className="text-sm text-muted-foreground">Order lunas</p>
+              <strong className="mt-1 block font-serif text-2xl">
+                {filteredPaidOrders.length}
+              </strong>
+            </article>
+            <article className="rounded-2xl border border-border p-4">
+              <p className="text-sm text-muted-foreground">Jumlah tiket</p>
+              <strong className="mt-1 block font-serif text-2xl">
+                {filteredPaidOrders.reduce(
+                  (total, order) => total + order.quantity,
+                  0,
+                )}
+              </strong>
+            </article>
+            <article className="rounded-2xl border border-border p-4">
+              <p className="text-sm text-muted-foreground">
+                Nominal pembayaran tercatat
+              </p>
+              <strong className="mt-1 block font-serif text-2xl">
+                {formatRupiah(
+                  filteredPaidOrders.reduce(
+                    (total, order) => total + (order.payment_amount ?? 0),
+                    0,
+                  ),
+                )}
+              </strong>
+              {filteredPaidOrders.some(
+                (order) => order.payment_amount === null,
+              ) && (
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Sebagian order lama belum tersinkron.
+                </span>
+              )}
+            </article>
+            <article className="rounded-2xl border border-border p-4">
+              <p className="text-sm text-muted-foreground">
+                Total harga tiket
+              </p>
+              <strong className="mt-1 block font-serif text-2xl">
+                {formatRupiah(
+                  filteredPaidOrders.reduce(
+                    (total, order) => total + order.order_total,
+                    0,
+                  ),
+                )}
+              </strong>
+            </article>
+          </div>
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[1050px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="p-3">Pembeli</th>
+                  <th className="p-3">Kontak WhatsApp</th>
+                  <th className="p-3">Jumlah tiket</th>
+                  <th className="p-3">Nominal pembayaran</th>
+                  <th className="p-3">Harga satuan rata-rata</th>
+                  <th className="p-3">Total harga tiket</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPaidOrders.map((order) => (
+                  <tr key={order.order_id} className="border-b border-border/60">
+                    <td className="p-3">
+                      <strong>{order.attendee_name}</strong>
+                      <br />
+                      <span className="text-xs text-muted-foreground">
+                        {order.attendee_email}
+                      </span>
+                      <br />
+                      <span className="text-xs text-muted-foreground">
+                        {order.order_id}
+                      </span>
+                    </td>
+                    <td className="p-3">{order.attendee_whatsapp}</td>
+                    <td className="p-3">{order.quantity}</td>
+                    <td className="p-3">
+                      {order.payment_amount === null
+                        ? "Belum tersinkron"
+                        : formatRupiah(order.payment_amount)}
+                    </td>
+                    <td className="p-3">{formatRupiah(order.unit_price)}</td>
+                    <td className="p-3">{formatRupiah(order.order_total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!filteredPaidOrders.length && (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Belum ada tiket lunas yang cocok.
               </p>
             )}
           </div>
