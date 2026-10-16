@@ -6,8 +6,16 @@ import { jsonTooLarge, readJson } from '@/lib/security'
 
 export async function GET() {
   if (!await requireAdminRole()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const result = await db.execute(sql`SELECT content, "updatedAt" FROM site_content WHERE id = 1 LIMIT 1`)
-  return NextResponse.json(result.rows[0] ?? {})
+  try {
+    const result = await db.execute(sql`SELECT content, "updatedAt" FROM site_content WHERE id = 1 LIMIT 1`)
+    return NextResponse.json(result.rows[0] ?? {})
+  } catch (error) {
+    console.error('[admin/content] Gagal mengambil konten:', error)
+    return NextResponse.json(
+      { error: 'Database konten admin tidak dapat diakses. Periksa koneksi DATABASE_URL dan pastikan tabel site_content tersedia.' },
+      { status: 503 },
+    )
+  }
 }
 
 export async function PUT(request: Request) {

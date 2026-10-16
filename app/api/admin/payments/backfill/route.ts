@@ -3,10 +3,17 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { requireAdminRole } from '@/lib/admin'
 import { getPayKitaOrder } from '@/lib/paykita'
+import { hasPaymentAmountColumn } from '@/lib/tickets'
 
 export async function POST() {
   const access = await requireAdminRole()
   if (!access) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await hasPaymentAmountColumn())) {
+    return NextResponse.json(
+      { error: 'Kolom payment_amount belum tersedia. Jalankan migrasi database terlebih dahulu.' },
+      { status: 409 },
+    )
+  }
 
   const missing = await db.execute(sql`
     SELECT order_id

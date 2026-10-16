@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Check,
   Download,
   LogOut,
   PackageCheck,
+  Pencil,
   Save,
   Search,
   ShieldCheck,
   Ticket,
+  Trash2,
   Users,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -39,6 +41,11 @@ type PaidOrder = {
   order_total: number;
   created_at: string;
 };
+type BuyerDraft = {
+  name: string;
+  email: string;
+  whatsapp: string;
+};
 type Dashboard = {
   role: "admin" | "operator";
   summary: {
@@ -50,6 +57,7 @@ type Dashboard = {
   };
   orders: Order[];
   paidOrders: PaidOrder[];
+  paymentAmountAvailable: boolean;
 };
 
 function formatRupiah(amount: number) {
@@ -88,13 +96,21 @@ export default function AdminPage() {
   >("overview");
   const [query, setQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [buyerDraft, setBuyerDraft] = useState<BuyerDraft>({
+    name: "",
+    email: "",
+    whatsapp: "",
+  });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [accessRequired, setAccessRequired] = useState(false);
   const [password, setPassword] = useState("");
 
   async function load() {
+    setLoading(true);
     setError("");
     try {
       const [contentResponse, statsResponse] = await Promise.all([
@@ -106,14 +122,28 @@ export default function AdminPage() {
         return;
       }
       setAccessRequired(false);
-      if (!contentResponse.ok || !statsResponse.ok)
-        throw new Error("Gagal memuat data dashboard");
-      const contentData = await contentResponse.json();
-      const statsData = await statsResponse.json();
+      const [contentData, statsData] = await Promise.all([
+        contentResponse.json().catch(() => ({})),
+        statsResponse.json().catch(() => ({})),
+      ]);
+      if (!contentResponse.ok) {
+        throw new Error(
+          contentData.error ??
+            `Gagal memuat konten admin (HTTP ${contentResponse.status}).`,
+        );
+      }
+      if (!statsResponse.ok) {
+        throw new Error(
+          statsData.error ??
+            `Gagal memuat data dashboard (HTTP ${statsResponse.status}).`,
+        );
+      }
       setContent(contentData.content ?? contentData);
       setDashboard(statsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat dashboard");
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => {
@@ -217,6 +247,73 @@ export default function AdminPage() {
     else {
       setMessage(data.message ?? "Aksi berhasil");
       await load();
+    }
+  }
+  function editBuyer(order: Order) {
+    setEditingOrderId(order.order_id);
+    setBuyerDraft({
+      name: order.attendee_name,
+      email: order.attendee_email,
+      whatsapp: order.attendee_whatsapp,
+    });
+    setError("");
+    setMessage("");
+  }
+  async function saveBuyer(orderId: string) {
+    setBusy(`buyer:${orderId}`);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${encodeURIComponent(orderId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buyerDraft),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error ?? "Gagal memperbarui data pembeli.");
+      setEditingOrderId(null);
+      setMessage("Data pembeli berhasil diperbarui.");
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Gagal memperbarui data pembeli.",
+      );
+    } finally {
+      setBusy("");
+    }
+  }
+  async function deleteUnpaidTicket(order: Order) {
+    if (
+      !window.confirm(
+        `Hapus tiket ${order.ticket_code}? Aksi ini hanya untuk order kedaluwarsa/dibatalkan dan tidak dapat dibatalkan.`,
+      )
+    )
+      return;
+    setBusy(`delete:${order.ticket_code}`);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${encodeURIComponent(order.order_id)}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticketCode: order.ticket_code }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error ?? "Gagal menghapus tiket.");
+      setMessage(`Tiket ${order.ticket_code} berhasil dihapus.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus tiket.");
+    } finally {
+      setBusy("");
     }
   }
   function exportCsv() {
@@ -340,8 +437,27 @@ export default function AdminPage() {
     );
   if (!content || !dashboard)
     return (
-      <main className="grid min-h-screen place-items-center bg-background">
-        <p className="text-muted-foreground">Memuat dashboard…</p>
+      <main className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 text-center">
+          {loading ? (
+            <p className="text-muted-foreground">Memuat dashboard…</p>
+          ) : (
+            <>
+              <h1 className="font-serif text-2xl font-bold">
+                Dashboard belum dapat dimuat
+              </h1>
+              <p className="mt-2 text-sm text-destructive">
+                {error || "Periksa akses admin dan koneksi database."}
+              </p>
+              <button
+                onClick={() => void load()}
+                className="mt-5 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                Coba lagi
+              </button>
+            </>
+          )}
+        </div>
       </main>
     );
   return (
@@ -470,7 +586,9 @@ export default function AdminPage() {
             <div>
               <h2 className="font-serif text-2xl font-bold">Order & tiket</h2>
               <p className="text-sm text-muted-foreground">
-                Gunakan kode tiket untuk check-in dan distribusi souvenir.
+                Admin dapat mengubah kontak pembeli. Tiket hanya dapat dihapus
+                jika order telah kedaluwarsa atau dibatalkan; perubahan jumlah
+                tiket memerlukan order pembayaran baru.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -520,56 +638,146 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
-                  <tr
-                    key={order.ticket_code}
-                    className="border-b border-border/60"
-                  >
-                    <td className="p-3">
-                      <strong>{order.ticket_code}</strong>
-                      <br />
-                      <span className="text-xs text-muted-foreground">
-                        {order.order_id}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      {order.attendee_name}
-                      <br />
-                      <span className="text-xs text-muted-foreground">
-                        {order.attendee_email}
-                      </span>
-                    </td>
-                    <td className="p-3">{order.payment_status}</td>
-                    <td className="p-3">{order.checkin_status}</td>
-                    <td className="p-3">{order.souvenir_status}</td>
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-2">
-                        {order.checkin_status !== "checked_in" && (
-                          <button
-                            disabled={busy === order.ticket_code + "checkin"}
-                            onClick={() =>
-                              operationalAction("checkin", order.ticket_code)
-                            }
-                            className="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
-                          >
-                            Check-in
-                          </button>
-                        )}
-                        {order.checkin_status === "checked_in" &&
-                          order.souvenir_status !== "collected" && (
+                {filteredOrders.map((order, orderIndex) => (
+                  <Fragment key={order.ticket_code}>
+                    <tr className="border-b border-border/60">
+                      <td className="p-3">
+                        <strong>{order.ticket_code}</strong>
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          {order.order_id}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        {order.attendee_name}
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          {order.attendee_email}
+                        </span>
+                      </td>
+                      <td className="p-3">{order.payment_status}</td>
+                      <td className="p-3">{order.checkin_status}</td>
+                      <td className="p-3">{order.souvenir_status}</td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-2">
+                          {dashboard.role === "admin" && (
                             <button
-                              disabled={busy === order.ticket_code + "souvenir"}
-                              onClick={() =>
-                                operationalAction("souvenir", order.ticket_code)
-                              }
-                              className="rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground"
+                              onClick={() => editBuyer(order)}
+                              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-bold"
                             >
-                              Souvenir
+                              <Pencil size={13} /> Edit pembeli
                             </button>
                           )}
-                      </div>
-                    </td>
-                  </tr>
+                          {dashboard.role === "admin" &&
+                            ["expired", "cancelled"].includes(
+                              order.payment_status,
+                            ) && (
+                              <button
+                                disabled={
+                                  busy === `delete:${order.ticket_code}`
+                                }
+                                onClick={() => deleteUnpaidTicket(order)}
+                                className="inline-flex items-center gap-1 rounded-full border border-destructive/50 px-3 py-1.5 text-xs font-bold text-destructive disabled:opacity-50"
+                              >
+                                <Trash2 size={13} /> Hapus
+                              </button>
+                            )}
+                          {order.checkin_status !== "checked_in" && (
+                            <button
+                              disabled={busy === order.ticket_code + "checkin"}
+                              onClick={() =>
+                                operationalAction("checkin", order.ticket_code)
+                              }
+                              className="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                            >
+                              Check-in
+                            </button>
+                          )}
+                          {order.checkin_status === "checked_in" &&
+                            order.souvenir_status !== "collected" && (
+                              <button
+                                disabled={busy === order.ticket_code + "souvenir"}
+                                onClick={() =>
+                                  operationalAction(
+                                    "souvenir",
+                                    order.ticket_code,
+                                  )
+                                }
+                                className="rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground"
+                              >
+                                Souvenir
+                              </button>
+                            )}
+                        </div>
+                      </td>
+                    </tr>
+                    {editingOrderId === order.order_id &&
+                      filteredOrders.findIndex(
+                        (candidate) => candidate.order_id === order.order_id,
+                      ) === orderIndex && (
+                      <tr className="border-b border-border/60 bg-muted/30">
+                        <td colSpan={6} className="p-4">
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <label>
+                              Nama pembeli
+                              <input
+                                value={buyerDraft.name}
+                                onChange={(event) =>
+                                  setBuyerDraft((current) => ({
+                                    ...current,
+                                    name: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              Email
+                              <input
+                                type="email"
+                                value={buyerDraft.email}
+                                onChange={(event) =>
+                                  setBuyerDraft((current) => ({
+                                    ...current,
+                                    email: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label>
+                              WhatsApp
+                              <input
+                                value={buyerDraft.whatsapp}
+                                onChange={(event) =>
+                                  setBuyerDraft((current) => ({
+                                    ...current,
+                                    whatsapp: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                          </div>
+                          <div className="mt-3 flex justify-end gap-2">
+                            <button
+                              onClick={() => setEditingOrderId(null)}
+                              className="rounded-full border border-border px-3 py-1.5 text-xs font-bold"
+                            >
+                              Batal
+                            </button>
+                            <button
+                              disabled={busy === `buyer:${order.order_id}`}
+                              onClick={() => saveBuyer(order.order_id)}
+                              className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
+                            >
+                              <Save size={13} />
+                              {busy === `buyer:${order.order_id}`
+                                ? "Menyimpan…"
+                                : "Simpan data pembeli"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -594,7 +802,10 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {filteredPaidOrders.some((order) => order.payment_amount === null) && (
+              {dashboard.paymentAmountAvailable &&
+                filteredPaidOrders.some(
+                  (order) => order.payment_amount === null,
+                ) && (
                 <button
                   onClick={syncHistoricalPayments}
                   disabled={busy === "backfill"}
@@ -623,6 +834,14 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+          {!dashboard.paymentAmountAvailable && (
+            <p className="mt-4 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              Rekap nominal pembayaran belum aktif. Jalankan migrasi{" "}
+              <code>db/migrations/20261016_add_ticket_payment_amount.sql</code>{" "}
+              pada database agar nominal pembayaran tersimpan dan bisa
+              disinkronkan.
+            </p>
+          )}
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <article className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">Order lunas</p>
@@ -644,20 +863,23 @@ export default function AdminPage() {
                 Nominal pembayaran tercatat
               </p>
               <strong className="mt-1 block font-serif text-2xl">
-                {formatRupiah(
-                  filteredPaidOrders.reduce(
-                    (total, order) => total + (order.payment_amount ?? 0),
-                    0,
-                  ),
-                )}
+                {dashboard.paymentAmountAvailable
+                  ? formatRupiah(
+                      filteredPaidOrders.reduce(
+                        (total, order) => total + (order.payment_amount ?? 0),
+                        0,
+                      ),
+                    )
+                  : "Belum tersedia"}
               </strong>
-              {filteredPaidOrders.some(
-                (order) => order.payment_amount === null,
-              ) && (
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Sebagian order lama belum tersinkron.
-                </span>
-              )}
+              {dashboard.paymentAmountAvailable &&
+                filteredPaidOrders.some(
+                  (order) => order.payment_amount === null,
+                ) && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Sebagian order lama belum tersinkron.
+                  </span>
+                )}
             </article>
             <article className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">
@@ -702,9 +924,11 @@ export default function AdminPage() {
                     <td className="p-3">{order.attendee_whatsapp}</td>
                     <td className="p-3">{order.quantity}</td>
                     <td className="p-3">
-                      {order.payment_amount === null
-                        ? "Belum tersinkron"
-                        : formatRupiah(order.payment_amount)}
+                      {!dashboard.paymentAmountAvailable
+                        ? "Belum tersedia"
+                        : order.payment_amount === null
+                          ? "Belum tersinkron"
+                          : formatRupiah(order.payment_amount)}
                     </td>
                     <td className="p-3">{formatRupiah(order.unit_price)}</td>
                     <td className="p-3">{formatRupiah(order.order_total)}</td>

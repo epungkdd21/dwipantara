@@ -48,6 +48,17 @@ export default function Page() {
       const data = await response.json().catch(() => ({ error: 'Respons checkout tidak valid.' }))
       if (!response.ok) throw new Error(data.error || 'Checkout gagal')
       if (!data.id) throw new Error('Order ID tidak diterima dari PayKita.')
+      try {
+        localStorage.setItem(
+          'dwipantara:pending-payment-order',
+          JSON.stringify({ id: String(data.id), createdAt: Date.now() }),
+        )
+      } catch (storageError) {
+        console.error(
+          '[checkout] Browser tidak dapat menyimpan ID order untuk redirect pembayaran:',
+          storageError,
+        )
+      }
       const query = new URLSearchParams()
       if (data.qris) query.set('qris', String(data.qris))
       if (data.qr_image) query.set('qr_image', String(data.qr_image))
