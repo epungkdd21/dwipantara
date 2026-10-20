@@ -7,13 +7,25 @@ function jakartaDate(value: Date) {
   }).format(value)
 }
 
+function jakartaTime(value: Date) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).format(value)
+}
+
 export type PricingRule = {
   startDate: string
   endDate: string
   basePrice: number
   salesOpen?: boolean
+  endTime?: string
   bundles?: Array<{ size: number; price: number; label: string }>
   label: string
+  notice?: string
 }
 
 const PRICING_RULES: PricingRule[] = [
@@ -82,15 +94,22 @@ const PRICING_RULES: PricingRule[] = [
   {
     startDate: '2026-10-21',
     endDate: '2026-10-21',
-    basePrice: 50000,
-    label: 'Harga khusus 21 Oktober',
+    basePrice: 38000,
+    endTime: '22:00:00',
+    label: 'Harga khusus 21 Oktober. Penjualan ditutup pukul 22.00 WIB.',
+    notice: 'kesempatan terakhir untuk kamu yg belum memiliki tiket dapatkan tiketnya Sekarang !',
   },
 ]
 
 export function getActivePricingRule(date = new Date()): PricingRule {
   const dateStr = jakartaDate(date)
   const rule = PRICING_RULES.find((r) => dateStr >= r.startDate && dateStr <= r.endDate)
-  if (rule) return rule
+  if (rule) {
+    if (rule.endTime && dateStr === rule.endDate && jakartaTime(date) >= rule.endTime) {
+      return { ...rule, salesOpen: false, label: 'Penjualan tiket ditutup pukul 22.00 WIB.' }
+    }
+    return rule
+  }
   if (dateStr > '2026-10-21') {
     return { startDate: '', endDate: '', basePrice: 0, salesOpen: false, label: 'Penjualan tiket telah ditutup.' }
   }

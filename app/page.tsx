@@ -116,6 +116,7 @@ export default function Page() {
                 <>
                   <span className="text-2xl font-bold">Rp{pricing.basePrice.toLocaleString('id-ID')} <small className="text-sm font-normal text-muted-foreground">/ orang</small></span>
                   {promoText && <p className="mt-2 text-sm font-semibold text-accent">{promoText}</p>}
+                  {pricing.notice && <p className="mt-2 text-sm font-semibold text-accent">{pricing.notice}</p>}
                 </>
               )}
             </div>
